@@ -45,7 +45,6 @@ const LiveInteractionSidebar = ({
             )} 
           />
         </div>
-        <span className="text-white text-[11px] sm:text-[12px] font-bold mt-1 drop-shadow-md">{likeCount}</span>
       </button>
       <button 
         onClick={onShowGuide}

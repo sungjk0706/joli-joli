@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { GlassIconButton } from '../ui/Common';
 import { X, ChevronDown, Send } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -198,9 +199,9 @@ const LiveChatSheet = ({
         <div className="w-full py-4 flex flex-col items-center">
           <div className="flex items-center justify-between w-full px-6 sm:px-8">
             <span className="text-white font-black text-lg sm:text-xl md:text-2xl tracking-tight drop-shadow-lg">실시간 채팅</span>
-            <button onClick={onClose} className="w-10 h-10 sm:w-11 sm:h-11 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-95 transition-all shadow-lg border border-white/10">
+            <GlassIconButton onClick={onClose} title="닫기">
               <X size={20} sm:size={22} />
-            </button>
+            </GlassIconButton>
           </div>
         </div>
 

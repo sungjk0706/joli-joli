@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronDown, MoreVertical, Volume2, VolumeX, Minimize2, Minimize, Maximize, X, Share2, Info } from 'lucide-react';
+import { GlassIconButton } from '../ui/Common';
+import { ChevronDown, MoreVertical, Volume2, VolumeX, Minimize2, Minimize, Maximize, X, Share2, Info, Heart } from 'lucide-react';
 
 const LiveHeader = ({ 
   activeProduct, 
@@ -8,7 +9,8 @@ const LiveHeader = ({
   onMiniModeChange, 
   onBack,
   showAlert,
-  viewMode 
+  viewMode,
+  likeCount = 0
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(!!(document.fullscreenElement || document.webkitFullscreenElement));
@@ -123,6 +125,10 @@ const LiveHeader = ({
             <div className="bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-sm flex items-center border border-white/10">
               <span className="text-white text-[11px] sm:text-[12px] font-bold opacity-90">1,291 시청</span>
             </div>
+            <div className="bg-brand-pink/20 backdrop-blur-md px-2 py-0.5 rounded-sm flex items-center gap-1 border border-brand-pink/30">
+              <Heart size={10} className="text-brand-pink fill-brand-pink animate-pulse" />
+              <span className="text-brand-pink text-[11px] sm:text-[12px] font-black">{Number(likeCount).toLocaleString()}</span>
+            </div>
           </div>
           <h2 className="text-white text-[15px] sm:text-[17px] md:text-[19px] font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] flex items-center gap-1.5 tracking-tight mt-0.5">
             ✨ {activeProduct?.name || '졸리졸리 라이브 컬렉션'} 💥
@@ -141,36 +147,39 @@ const LiveHeader = ({
           </button>
         </div>
         
-        <div className="flex flex-col items-center gap-3 pt-1">
-          {/* Top Right Close Button */}
-          <button onClick={onBack} className="w-10 h-10 sm:w-12 sm:h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-black/60 transition-all shadow-xl">
+        <div className="flex flex-col items-center gap-2.5 pt-1">
+          {/* 1. Close Button */}
+          <GlassIconButton onClick={onBack} title="닫기">
             <X size={20} sm:size={24} />
-          </button>
+          </GlassIconButton>
 
-          {/* Full Screen Toggle (Clean Icon) */}
-          <button onClick={toggleFullscreen} className="w-10 h-10 sm:w-11 sm:h-11 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-black/60 transition-all shadow-xl" title={isFullscreen ? "축소하기" : "전체화면"}>
+          {/* 2. Full Screen Toggle */}
+          <GlassIconButton onClick={toggleFullscreen} title={isFullscreen ? "축소하기" : "전체화면"}>
             {isFullscreen ? <Minimize size={20} sm:size={22} /> : <Maximize size={20} sm:size={22} />}
-          </button>
+          </GlassIconButton>
 
-          {/* Mini Mode Toggle (Clean Icon) */}
-          <button onClick={() => onMiniModeChange(true)} className="w-9 h-9 sm:w-10 sm:h-10 bg-black/20 backdrop-blur-md border border-white/5 rounded-full flex items-center justify-center text-white/80 hover:bg-black/40 transition-all shadow-lg" title="미니 플레이어">
+          {/* 3. Mini Mode Toggle */}
+          <GlassIconButton onClick={() => onMiniModeChange(true)} title="미니 플레이어">
             <Minimize2 size={18} sm:size={20} />
-          </button>
+          </GlassIconButton>
 
-          <div className="flex flex-col gap-2 mt-2 relative">
-            <button onClick={() => setIsMuted(!isMuted)} className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-white/90 hover:bg-white/10 rounded-full transition-all">
-              {isMuted ? <VolumeX size={20} sm:size={22} /> : <Volume2 size={20} sm:size={22} />}
-            </button>
-            <button 
+          {/* 4. Mute Toggle */}
+          <GlassIconButton onClick={() => setIsMuted(!isMuted)} title={isMuted ? "소리 켜기" : "소리 끄기"}>
+            {isMuted ? <VolumeX size={20} sm:size={22} /> : <Volume2 size={20} sm:size={22} />}
+          </GlassIconButton>
+
+          {/* 5. More Menu */}
+          <div className="relative">
+            <GlassIconButton 
               onClick={(e) => {
                 e.stopPropagation();
-                console.log('Dots clicked, current showMenu:', showMenu);
                 setShowMenu(!showMenu);
               }}
-              className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-white/90 hover:bg-white/10 rounded-full transition-all ${showMenu ? 'bg-white/20' : ''}`}
+              title="더보기"
+              className={showMenu ? 'bg-white/20 border-white/40' : ''}
             >
               <MoreVertical size={20} sm:size={22} />
-            </button>
+            </GlassIconButton>
 
             {/* More Options Popover */}
             {showMenu && (

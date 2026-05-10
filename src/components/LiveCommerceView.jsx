@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Heart, Maximize2, X } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { GlassIconButton } from './ui/Common';
 import { supabase } from '../lib/supabase';
 import { orderService } from '../services/orderService';
 import { configService } from '../services';
@@ -424,6 +425,7 @@ const LiveCommerceView = ({
             onMiniModeChange={onMiniModeChange} 
             onBack={onBack}
             showAlert={showAlert}
+            likeCount={likeCount}
           />
 
           {/* Interaction Overlay (Mobile only or Desktop floating) */}
@@ -559,22 +561,22 @@ const LiveCommerceView = ({
         >
           {/* Top-left expand button */}
           <div className="absolute top-1.5 left-1.5">
-            <button 
+            <GlassIconButton 
               onClick={(e) => { e.stopPropagation(); onMiniModeChange(false); }}
-              className="w-8 h-8 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-95 transition-all shadow-lg border border-white/10 pointer-events-auto"
+              className="w-8 h-8 sm:w-8 sm:h-8 bg-black/60"
             >
-              <Maximize2 size={16} />
-            </button>
+              <Maximize2 size={14} />
+            </GlassIconButton>
           </div>
 
           {/* Top-right close button */}
           <div className="absolute top-1.5 right-1.5">
-            <button 
+            <GlassIconButton 
               onClick={(e) => { e.stopPropagation(); onBack(); }}
-              className="w-8 h-8 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-95 transition-all shadow-lg border border-white/10 pointer-events-auto"
+              className="w-8 h-8 sm:w-8 sm:h-8 bg-black/60"
             >
-              <X size={16} />
-            </button>
+              <X size={14} />
+            </GlassIconButton>
           </div>
 
           {/* Bottom LIVE Indicator */}

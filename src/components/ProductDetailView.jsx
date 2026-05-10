@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Package, Heart, Share2, ChevronLeft, Minus, Plus, Star, ZoomIn, Sparkles, Flame, Truck, Shield, Zap, Gift } from 'lucide-react';
-import { Button, Stepper, Badge } from './ui/Common';
+import { Button, Stepper, Badge, GlassIconButton } from './ui/Common';
 import LazyImage from './ui/LazyImage';
 import ProductReviews from './ProductReviews';
 import FlashSaleTimer from './FlashSaleTimer';
@@ -108,21 +108,21 @@ const ProductDetailView = ({
         <div className="absolute inset-0 bg-gray-50/50 pointer-events-none" />
 
 
-        {/* Header */}
         <div className="relative z-10 flex justify-between items-center p-4 sm:p-6">
-          <button onClick={onClose} className="w-10 h-10 sm:w-12 sm:h-12 glass border border-white/30 rounded-full flex items-center justify-center text-gray-900 hover:scale-110 active:scale-90 transition-all shadow-xl">
+          <GlassIconButton onClick={onClose} title="닫기">
             <X size={18} sm:size={20} />
-          </button>
+          </GlassIconButton>
           <div className="flex gap-2 sm:gap-3">
-            <button 
+            <GlassIconButton 
               onClick={() => setIsLiked(!isLiked)}
-              className={`w-10 h-10 sm:w-12 sm:h-12 glass border border-white/30 rounded-full flex items-center justify-center hover:scale-110 active:scale-90 transition-all shadow-xl ${isLiked ? 'text-brand-pink-accent' : 'text-gray-900'}`}
+              className={isLiked ? 'text-brand-pink-accent' : 'text-white'}
+              title="좋아요"
             >
               <Heart size={18} sm:size={20} fill={isLiked ? 'currentColor' : 'none'} />
-            </button>
-            <button onClick={handleShare} className="w-10 h-10 sm:w-12 sm:h-12 glass border border-white/30 rounded-full flex items-center justify-center text-gray-900 hover:scale-110 active:scale-90 transition-all shadow-xl">
+            </GlassIconButton>
+            <GlassIconButton onClick={handleShare} title="공유하기">
               <Share2 size={16} sm:size={18} />
-            </button>
+            </GlassIconButton>
           </div>
         </div>
 

@@ -234,3 +234,17 @@ export const SectionHeading = ({ children, icon: Icon, className = '' }) => (
     <h2 className="text-xl sm:text-2xl md:text-3xl admin-title truncate">{children}</h2>
   </div>
 )
+
+// 프로젝트 전역에서 사용하는 검은 반투명 유리 질감 버튼
+export const GlassIconButton = ({ onClick, children, className = "", title = "" }) => (
+  <button 
+    onClick={onClick} 
+    title={title}
+    className={cn(
+      "w-10 h-10 sm:w-11 sm:h-11 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-black/60 active:scale-95 transition-all shadow-xl pointer-events-auto",
+      className
+    )}
+  >
+    {children}
+  </button>
+)
