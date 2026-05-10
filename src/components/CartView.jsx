@@ -10,6 +10,8 @@ const CartView = ({ customerPhone, showAlert, onCheckout, onClose }) => {
   useEffect(() => {
     if (customerPhone) {
       loadCart();
+    } else {
+      setLoading(false);
     }
   }, [customerPhone]);
 

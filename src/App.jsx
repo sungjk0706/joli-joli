@@ -104,25 +104,6 @@ function App() {
       {/* 메인 고객 페이지 */}
       <CustomerView />
       
-      {/* 공통 푸터 */}
-      <footer className="py-20 text-center relative">
-        <div className="flex flex-col items-center gap-2 mb-6">
-          <div className="w-8 h-px bg-brand-pink mx-auto mb-2 opacity-30"></div>
-          <p className="text-[11px] font-bold text-brand-pink-dark tracking-widest uppercase">joli.joli Live Collection</p>
-          <p className="text-[10px] text-gray-400">© 2026 Style Live. All rights reserved.</p>
-        </div>
-        
-        <div className="flex justify-center items-center gap-4">
-          {!isSupabaseConfigured() && (
-            <button 
-              onClick={() => setView('setup')}
-              className="text-[10px] text-gray-400 hover:text-brand-pink-dark transition-colors font-bold"
-            >
-              시스템 설정
-            </button>
-          )}
-        </div>
-      </footer>
     </div>
   )
 }

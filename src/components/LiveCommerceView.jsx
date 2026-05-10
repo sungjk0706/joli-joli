@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, Maximize2, X } from 'lucide-react';
+import { cn } from '../utils/cn';
 import { supabase } from '../lib/supabase';
 import { orderService } from '../services/orderService';
 import { configService } from '../services';
@@ -8,11 +9,13 @@ import { configService } from '../services';
 import LiveVideoPlayer from './live/LiveVideoPlayer';
 import LiveHeader from './live/LiveHeader';
 import LiveInteractionSidebar from './live/LiveInteractionSidebar';
-import LiveProductCard from './live/LiveProductCard';
+import LiveProductDisplay from './live/LiveProductDisplay';
+import LiveChatPreview from './live/LiveChatPreview';
 import { LiveChatSheet } from './live/LiveChatSheet';
 import LiveProductPushSheet from './live/LiveProductPushSheet';
 import LiveOrderSheet from './live/LiveOrderSheet';
 import ProductDetailView from './ProductDetailView';
+import LiveProductListView from './live/LiveProductListView';
 
 const LiveCommerceView = ({ 
   allProducts = [], 
@@ -23,10 +26,13 @@ const LiveCommerceView = ({
   onPushToLive = () => {},
   isMiniMode = false,
   onMiniModeChange = () => {},
-  shortformVideoUrl = "/인스타.mp4",
-  config
+  shortformVideoUrl: initialShortformVideoUrl = "/인스타.mp4",
+  config,
+  setSelectedProduct,
+  showAlert
 }) => {
   // State management
+  const [currentShortformVideoUrl, setCurrentShortformVideoUrl] = useState(config?.shortformVideoUrl || initialShortformVideoUrl);
   const [message, setMessage] = useState('');
   const [chatMessages, setChatMessages] = useState([
     { user: 'joli_joli', text: '반갑습니다! 졸리졸리 라이브에 오신 것을 환영해요 💖', isAdmin: true },
@@ -44,27 +50,74 @@ const LiveCommerceView = ({
   const [loading, setLoading] = useState(false);
   const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isProductListOpen, setIsProductListOpen] = useState(false);
   const [bannedUsers, setBannedUsers] = useState([]);
   const [currentUsername] = useState(() => localStorage.getItem('joli_user_name') || `익명_${Math.floor(Math.random() * 10000)}`);
+  const touchStartY = useRef(0);
+  const touchStartX = useRef(0); // 수평 드래그용
+  const initialMiniPos = useRef({ x: 0, y: 0 });
+  const containerRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('joli_user_name', currentUsername);
   }, [currentUsername]);
+
+  // config prop 변경 시 상태 동기화
+  useEffect(() => {
+    if (config) {
+      if (config.shortformVideoUrl) setCurrentShortformVideoUrl(config.shortformVideoUrl);
+      if (config.liveGuideInfo) setGuideInfo(config.liveGuideInfo);
+    }
+  }, [config]);
   
   // Gesture State
   const [touchDeltaY, setTouchDeltaY] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
-  const touchStartY = useRef(0);
-  const containerRef = useRef(null);
+  const [miniPos, setMiniPos] = useState({ x: 0, y: 0 }); // 미니 플레이어 자유 이동 좌표
+  const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+  // 화면 크기 변화 대응 (안전한 값 확보)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 0 && window.innerHeight > 0) {
+        // 키보드 활성화 시 높이값 변화 무시 (레이아웃 튐 방지)
+        const isInputFocused = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+        setViewportSize(prev => ({
+          width: window.innerWidth,
+          height: isInputFocused ? prev.height : window.innerHeight
+        }));
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    // 초기 실행
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Data fetching & Realtime
   const likeSyncTimer = useRef(null);
+  const popTimerRef = useRef(null);
+
+  const [guideInfo, setGuideInfo] = useState('졸리졸리 라이브에 오신 것을 환영합니다! ✨\n하단을 눌러 상품을 확인하고 하트로 응원해주세요!');
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      // 1. 설정 가져오기 (좋아요 수)
-      const { data: likeConfig } = await supabase.from('configs').select('value').eq('key', 'live_like_count').maybeSingle();
-      if (likeConfig) setLikeCount(parseInt(likeConfig.value) || 1284);
+      // 1. 설정 가져오기 (좋아요 수 + 가이드 정보 + 숏폼 영상 URL)
+      const { data: configs } = await supabase
+        .from('configs')
+        .select('key, value')
+        .in('key', ['live_like_count', 'live_guide_info', 'shortform_video_url']);
+      
+      if (configs) {
+        const likes = configs.find(c => c.key === 'live_like_count');
+        if (likes) setLikeCount(parseInt(likes.value) || 1284);
+        
+        const guide = configs.find(c => c.key === 'live_guide_info');
+        if (guide) setGuideInfo(guide.value);
+
+        const video = configs.find(c => c.key === 'shortform_video_url');
+        if (video) setCurrentShortformVideoUrl(video.value);
+      }
 
       // 2. 채팅 내역 가져오기 (최신 50개)
       const { data: chats } = await supabase.from('live_chat').select('*').order('created_at', { ascending: true }).limit(50);
@@ -105,62 +158,86 @@ const LiveCommerceView = ({
         const list = p.new.value ? p.new.value.split(',').filter(Boolean) : [];
         setBannedUsers(list);
       })
+      // 실시간 영상 URL 업데이트 수신
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'configs', filter: 'key=eq.shortform_video_url' }, (p) => {
+        setCurrentShortformVideoUrl(p.new.value);
+      })
+      // 실시간 가이드 정보 업데이트 수신
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'configs', filter: 'key=eq.live_guide_info' }, (p) => {
+        setGuideInfo(p.new.value);
+      })
       .subscribe();
 
     return () => { 
       supabase.removeChannel(orderChannel); 
       if (likeSyncTimer.current) clearTimeout(likeSyncTimer.current);
-      
-      // 컴포넌트 언마운트 시 전체화면 해제 (미니모드 아닐 때만)
-      if (document.fullscreenElement) {
-        if (document.exitFullscreen) document.exitFullscreen();
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      }
     };
   }, []);
 
-  // 라이브 화면 진입 시 전체화면 시도
+  // 전체 화면 복구 감지 및 주소창 숨기기 (몰입감 확보)
   useEffect(() => {
     if (!isMiniMode) {
       const docElm = document.documentElement;
-      // 브라우저 정책상 실패할 수 있으나 최대한 시도
-      try {
-        if (docElm.requestFullscreen) docElm.requestFullscreen().catch(() => {});
-        else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
-      } catch (e) {}
+      const requestFS = () => {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          if (docElm.requestFullscreen) docElm.requestFullscreen().catch(() => {});
+          else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
+        }
+      };
+      // 약간의 지연을 주어 브라우저 상태 안정화 후 요청
+      const timer = setTimeout(requestFS, 100);
+      return () => clearTimeout(timer);
     }
   }, [isMiniMode]);
 
+
+
   // Handlers
   const handleTouchStart = (e) => {
-    if (isMiniMode) return;
     touchStartY.current = e.touches[0].clientY;
+    touchStartX.current = e.touches[0].clientX;
+    
+    if (isMiniMode) {
+      initialMiniPos.current = { ...miniPos };
+    }
+    
     setIsSwiping(true);
   };
 
   const handleTouchMove = (e) => {
-    if (isMiniMode || !isSwiping) return;
+    if (!isSwiping) return;
+    
     const deltaY = e.touches[0].clientY - touchStartY.current;
-    if (deltaY > 0) setTouchDeltaY(deltaY);
+    const deltaX = e.touches[0].clientX - touchStartX.current;
+
+    if (isMiniMode) {
+      // 미니 플레이어 자유 이동
+      setMiniPos({
+        x: initialMiniPos.current.x - deltaX, // 오른쪽 기준이므로 델타를 뺌
+        y: initialMiniPos.current.y - deltaY  // 아래쪽 기준이므로 델타를 뺌
+      });
+    } else {
+      // 전체 화면에서 아래로 끌어내리기
+      if (deltaY > 0) setTouchDeltaY(deltaY);
+    }
   };
 
   const handleTouchEnd = () => {
-    if (isMiniMode) return;
     setIsSwiping(false);
-    if (touchDeltaY > 150) {
-      onMiniModeChange(true);
+    
+    if (isMiniMode) {
+      // 미니 모드에서는 별도 액션 없음 (위치 고정됨)
+    } else {
+      // 100px 이상 드래그하면 미니모드 전환
+      if (touchDeltaY > 100) {
+        onMiniModeChange(true);
+      }
+      setTouchDeltaY(0);
     }
-    setTouchDeltaY(0);
   };
 
   const handleClick = () => {
-    if (isSwiping || touchDeltaY > 0) return;
-    if (isMiniMode) {
-      const docElm = document.documentElement;
-      if (docElm.requestFullscreen) docElm.requestFullscreen();
-      else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
-      onMiniModeChange(false);
-    }
+    // 이제 클릭으로 전체화면 전환하지 않음 (이동 중 클릭 방지)
   };
   const handleSend = async () => {
     if (!message.trim()) return;
@@ -197,27 +274,47 @@ const LiveCommerceView = ({
   };
 
   const handleLike = () => {
-    setIsLiked(true);
+    // 1. 좋아요 숫자 무조건 증가
     const newCount = likeCount + 1;
     setLikeCount(newCount);
     
-    const newHeart = { id: Date.now(), left: Math.random() * 80 + 10 };
-    setHearts(prev => [...prev, newHeart]);
+    // 2. 버튼 팝 애니메이션 상태 제어 (잠시 채워졌다가 비워짐)
+    setIsLiked(true);
+    if (popTimerRef.current) clearTimeout(popTimerRef.current);
+    popTimerRef.current = setTimeout(() => setIsLiked(false), 400);
 
-    // 1. 실시간 하트 애니메이션 브로드캐스트 (즉시)
+    // 3. 플로팅 하트 애니메이션 (여러 개 생성으로 풍성하게)
+    const randomLeft = Math.random() * 80 + 10;
+    const newHearts = Array.from({ length: 2 }, (_, i) => ({
+      id: `${Date.now()}-${i}`,
+      left: Math.max(10, Math.min(90, randomLeft + (i * 8 - 4)))
+    }));
+    
+    setHearts(prev => [...prev, ...newHearts]);
+
+    // 4. 실시간 하트 애니메이션 브로드캐스트 (즉시)
     supabase.channel('live-realtime').send({
       type: 'broadcast',
       event: 'like',
-      payload: { left: newHeart.left }
+      payload: { left: randomLeft }
     });
 
-    // 2. DB 동기화 (Debounce - 5초 동안 입력이 없으면 최종 count 저장)
+    // 5. DB 동기화 (Debounce)
     if (likeSyncTimer.current) clearTimeout(likeSyncTimer.current);
     likeSyncTimer.current = setTimeout(async () => {
       await supabase.from('configs').upsert({ key: 'live_like_count', value: String(newCount) }, { onConflict: 'key' });
     }, 5000);
 
-    setTimeout(() => setHearts(prev => prev.filter(h => h.id !== newHeart.id)), 2000);
+    // 2초 뒤 하트 제거
+    setTimeout(() => {
+      setHearts(prev => prev.filter(h => !newHearts.find(nh => nh.id === h.id)));
+    }, 2000);
+  };
+
+  const handleShowGuide = () => {
+    if (showAlert) {
+      showAlert('라이브 이용 가이드 💡', guideInfo, 'info');
+    }
   };
 
   const handleOrderSubmit = async (e, f, p) => {
@@ -266,90 +363,116 @@ const LiveCommerceView = ({
 
   const activeProduct = selectedProduct || (displayProducts?.length > 0 ? displayProducts[0] : allProducts?.[0]);
 
+  const miniWidth = viewportSize.width < 640 ? 120 : 160;
+  const miniHeight = viewportSize.width < 640 ? 200 : 260;
+  const scaleX = miniWidth / viewportSize.width;
+  const scaleY = miniHeight / viewportSize.height;
+
   return (
     <div 
       ref={containerRef}
-      className={`fixed z-[100] bg-black overflow-hidden select-none shadow-2xl transition-shadow duration-500 flex flex-col lg:flex-row ${
-        isMiniMode ? 'cursor-pointer active:scale-95 z-[5000] ring-1 ring-white/20' : ''
-      }`} 
+      className={cn(
+        "fixed inset-0 z-[5000] overflow-hidden select-none pointer-events-none",
+        isMiniMode ? "pointer-events-none" : "pointer-events-auto"
+      )}
       style={{ 
-        willChange: 'top, right, width, height, border-radius', 
-        top: isMiniMode ? 'calc(100dvh - 230px)' : `${touchDeltaY}px`,
-        right: isMiniMode ? '20px' : '0',
-        width: isMiniMode ? '120px' : '100%',
-        height: isMiniMode ? '210px' : '100dvh',
-        borderRadius: isMiniMode ? '24px' : '0',
-        transition: isSwiping ? 'none' : 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)', 
-        margin: 0,
-        padding: 0,
-        boxSizing: 'border-box',
         overscrollBehavior: 'none',
         touchAction: 'none'
       }}
-      onClick={handleClick}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
-      {/* Main Video Area */}
-      <div className="relative flex-1 h-full overflow-hidden">
-        {/* 1. Video Player */}
+      {/* 1. Motion Container (This moves and scales) */}
+      <div 
+        className={cn(
+          "absolute bg-black overflow-hidden shadow-2xl border-0",
+          isMiniMode ? "rounded-3xl ring-1 ring-white/20 pointer-events-auto" : "rounded-0"
+        )}
+        style={{
+          willChange: 'transform, border-radius',
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+          perspective: 1000,
+          WebkitPerspective: 1000,
+          width: isMiniMode ? viewportSize.width : '100%',
+          height: isMiniMode ? viewportSize.height : '100%',
+          transformOrigin: 'top left',
+          transform: isMiniMode 
+            ? `translate(calc(100vw - ${miniPos.x + (viewportSize.width < 640 ? 136 : 200)}px), calc(100dvh - ${miniPos.y + (viewportSize.width < 640 ? 220 : 340)}px)) scale(${scaleX}, ${scaleY})`
+            : `translate(0, ${touchDeltaY}px) scale(1, 1)`,
+          transition: isSwiping ? 'none' : 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
+        onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <LiveVideoPlayer 
-          src={config?.shortformVideoUrl || shortformVideoUrl}
+          src={currentShortformVideoUrl}
           isMuted={isMuted} 
           isMiniMode={isMiniMode} 
           onBack={onBack} 
           onMiniModeChange={onMiniModeChange} 
         />
+      </div>
 
-        {/* 2. Full Mode UI Components */}
-        {!isMiniMode && (
-          <>
-            {/* Hearts Animation */}
-            <div className="absolute inset-0 pointer-events-none z-[60] overflow-hidden">
-              {hearts.map(h => (
-                <div key={h.id} className="absolute bottom-20 text-brand-pink-accent animate-heart-fly" style={{ left: `${h.left}%` }}>
-                  <Heart fill="currentColor" size={32} />
-                </div>
-              ))}
-            </div>
+      {/* 2. UI Components Layer - Always fixed at full screen, fades in/out */}
+      <div className={cn(
+        "fixed inset-0 z-[6000] overflow-hidden transition-opacity duration-500 ease-in-out pointer-events-none",
+        isMiniMode ? "opacity-0" : "opacity-100 delay-500 pointer-events-auto"
+      )}>
+        {/* Hearts Animation */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {hearts.map(h => (
+              <div key={h.id} className="absolute bottom-20 text-brand-pink-accent animate-heart-fly" style={{ left: `${h.left}%` }}>
+                <Heart fill="currentColor" size={32} />
+              </div>
+            ))}
+          </div>
 
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none z-20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none z-20" />
 
-            {/* Header */}
-            <LiveHeader 
-              activeProduct={activeProduct} 
-              isMuted={isMuted} 
-              setIsMuted={setIsMuted} 
-              onMiniModeChange={onMiniModeChange} 
-            />
+          {/* Header */}
+          <LiveHeader 
+            activeProduct={activeProduct} 
+            isMuted={isMuted} 
+            setIsMuted={setIsMuted} 
+            onMiniModeChange={onMiniModeChange} 
+            onBack={onBack}
+            showAlert={showAlert}
+          />
 
-            {/* Interaction Overlay (Mobile only or Desktop floating) */}
-            <div className="absolute bottom-0 left-0 right-0 z-[60] flex flex-col pointer-events-none pb-4 lg:pb-10">
-              <div className="flex items-end justify-between px-4 w-full">
-                <LiveProductCard 
-                  activeProduct={activeProduct} 
-                  chatMessages={filteredChatMessages} 
-                  onOrderOpen={() => setIsSheetOpen(true)} 
-                />
-                <LiveInteractionSidebar 
-                  isAdmin={isAdmin} 
-                  onLike={handleLike} 
-                  isLiked={isLiked} 
-                  likeCount={likeCount} 
-                  onChatExpand={() => setIsChatExpanded(true)} 
-                  onDetailOpen={() => setIsDetailOpen(true)}
-                  onProductSheetOpen={() => setIsProductSheetOpen(true)}
+          {/* Interaction Overlay (Mobile only or Desktop floating) */}
+          <div className="absolute bottom-0 left-0 right-0 z-[60] flex flex-col pointer-events-none pb-4 lg:pb-10">
+            <div className="flex items-end justify-between px-4 w-full">
+              <div className="flex-1 min-w-0 flex flex-col gap-2 pr-6 bg-transparent border-0 outline-none !border-none !outline-none !ring-0">
+                {!isChatExpanded && <LiveChatPreview chatMessages={filteredChatMessages} />}
+                <LiveProductDisplay 
+                  products={displayProducts}
+                  onOrderOpen={() => setIsSheetOpen(true)}
+                  onProductClick={(product) => {
+                    setSelectedProduct(product);
+                    setIsDetailOpen(true);
+                  }}
                 />
               </div>
+              <LiveInteractionSidebar 
+                isAdmin={isAdmin} 
+                onLike={handleLike} 
+                isLiked={isLiked} 
+                likeCount={likeCount} 
+                onChatExpand={() => setIsChatExpanded(true)} 
+                onDetailOpen={() => setIsProductListOpen(true)}
+                onProductSheetOpen={() => setIsProductSheetOpen(true)}
+                onShowGuide={handleShowGuide}
+              />
             </div>
-          </>
-        )}
+          </div>
       </div>
 
       {/* Desktop Chat Sidebar */}
-      {!isMiniMode && (
-        <div className="hidden lg:flex lg:w-[380px] xl:w-[450px] h-full bg-zinc-900 border-l border-white/10 flex-col overflow-hidden relative">
+      <div className={cn(
+        "hidden lg:flex lg:w-[380px] xl:w-[450px] h-full bg-zinc-900 border-l border-white/10 flex-col overflow-hidden relative transition-opacity duration-500",
+        isMiniMode ? "opacity-0 pointer-events-none" : "opacity-100 delay-500"
+      )}>
           <div className="p-6 border-b border-white/5">
             <h3 className="text-white font-black text-xl tracking-tight">실시간 대화</h3>
           </div>
@@ -366,13 +489,14 @@ const LiveCommerceView = ({
             onProductClick={(p) => { setIsDetailOpen(true); }} 
           />
         </div>
-      )}
-
+      
       {/* 3. Sheets & Modals (Mobile specific or Global) */}
-      {!isMiniMode && (
-        <>
-          {isDetailOpen && (
-             <div className="fixed inset-0 z-[3000] bg-white flex flex-col animate-slide-up-full overflow-hidden">
+      <div className={cn(
+        "relative z-[7000] transition-opacity duration-300",
+        isMiniMode ? "opacity-0 pointer-events-none" : "opacity-100"
+      )}>
+        {isDetailOpen && (
+             <div className="fixed inset-0 z-[8000] bg-white flex flex-col animate-slide-up-full overflow-hidden">
                 <ProductDetailView 
                   product={activeProduct} 
                   onClose={() => setIsDetailOpen(false)} 
@@ -383,6 +507,18 @@ const LiveCommerceView = ({
                 />
              </div>
           )}
+
+          <LiveProductListView
+            isOpen={isProductListOpen}
+            onClose={() => setIsProductListOpen(false)}
+            products={allProducts}
+            liveProductIds={liveProductIds}
+            onProductClick={(product) => {
+              setSelectedProduct(product);
+              setIsProductListOpen(false);
+              setIsDetailOpen(true);
+            }}
+          />
 
           <LiveProductPushSheet 
             isOpen={isProductSheetOpen} 
@@ -417,8 +553,50 @@ const LiveCommerceView = ({
               onProductClick={(p) => { setIsDetailOpen(true); setIsChatExpanded(false); }} 
             />
           </div>
-        </>
-      )}
+      </div>
+
+        {/* 4. Mini Mode UI Layer (Unscaled for better visibility) */}
+        <div 
+          className={cn(
+            "fixed z-[9000] pointer-events-none transition-opacity duration-300",
+            isMiniMode ? "opacity-100" : "opacity-0"
+          )}
+          style={{
+            width: miniWidth,
+            height: miniHeight,
+            transformOrigin: 'top left',
+            transform: isMiniMode 
+              ? `translate(calc(100vw - ${miniPos.x + (viewportSize.width < 640 ? 136 : 200)}px), calc(100dvh - ${miniPos.y + (viewportSize.width < 640 ? 220 : 340)}px))`
+              : `translate(0, ${touchDeltaY}px)`,
+            transition: isSwiping ? 'none' : 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease-in-out',
+          }}
+        >
+          {/* Top-left expand button */}
+          <div className="absolute top-1.5 left-1.5">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onMiniModeChange(false); }}
+              className="w-8 h-8 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-95 transition-all shadow-lg border border-white/10 pointer-events-auto"
+            >
+              <Maximize2 size={16} />
+            </button>
+          </div>
+
+          {/* Top-right close button */}
+          <div className="absolute top-1.5 right-1.5">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onBack(); }}
+              className="w-8 h-8 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-95 transition-all shadow-lg border border-white/10 pointer-events-auto"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Bottom LIVE Indicator */}
+          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-brand-pink/90 backdrop-blur-sm px-2 py-0.5 rounded-md text-[8px] font-black text-white shadow-md border border-white/10 pointer-events-none">
+             <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
+             LIVE
+          </div>
+        </div>
 
       {/* Global Notifications */}
       <div className="fixed top-24 left-4 right-4 z-[10000] pointer-events-none flex flex-col gap-2">

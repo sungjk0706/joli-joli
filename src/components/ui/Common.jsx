@@ -16,8 +16,8 @@ export const Button = ({
     primary: 'bg-brand-pink-dark text-brand-pink-contrast shadow-brand-pink/20 hover:bg-brand-pink',
     secondary: 'bg-brand-blue-dark text-brand-blue-contrast shadow-brand-blue/20 hover:bg-brand-blue',
     dark: 'bg-gray-900 text-white shadow-gray-200 hover:bg-gray-800',
-    outline: 'bg-white text-gray-400 border border-gray-100 hover:bg-gray-50',
-    ghost: 'bg-gray-50 text-gray-400 hover:bg-gray-100 shadow-none'
+    outline: 'bg-white text-brand-pink-dark border-2 border-brand-pink-light/30 hover:bg-brand-pink-light/10',
+    ghost: 'bg-gray-50 text-gray-600 hover:bg-gray-100 shadow-none'
   }
 
   const sizes = {

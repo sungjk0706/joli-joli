@@ -4,11 +4,12 @@ import { productService, categoryService, orderService, configService } from '..
 import AdminGuideModal from './AdminGuideModal';
 import AdminOrders from './AdminOrders';
 import AdminProducts from './AdminProducts';
-import AdminCategories from './AdminCategories';
 import AdminSettings from './AdminSettings';
 import AdminStats from './AdminStats';
 import AdminChat from './AdminChat';
 import AdminDopamine from './AdminDopamine';
+import AdminStorage from './AdminStorage';
+import AdminDB from './AdminDB';
 import AdminLoginSection from './admin/AdminLoginSection';
 import AdminHeader from './admin/AdminHeader';
 import AdminTabs from './admin/AdminTabs';
@@ -35,7 +36,7 @@ const AdminView = ({ onBack, onEnterLiveControl, activeTab, setActiveTab }) => {
   const { orders, loading: ordersLoading } = useRealtimeOrders();
   const { products } = useProducts();
   const { categories } = useCategories();
-  const { config, loading: configLoading } = useConfigs();
+  const { config, loading: configLoading, refetch: refetchConfigs } = useConfigs();
 
   const [shopName, setShopName] = useState('');
   const [shopSubtitle, setShopSubtitle] = useState('');
@@ -45,6 +46,7 @@ const AdminView = ({ onBack, onEnterLiveControl, activeTab, setActiveTab }) => {
   const [telegram, setTelegram] = useState({ token: '', chatId: '' });
   const [isOrderingActive, setIsOrderingActive] = useState(true);
   const [shortformVideoUrl, setShortformVideoUrl] = useState('');
+  const [liveGuideInfo, setLiveGuideInfo] = useState('');
 
   // 주문 알림 로직
   useEffect(() => {
@@ -91,6 +93,7 @@ const AdminView = ({ onBack, onEnterLiveControl, activeTab, setActiveTab }) => {
       setBankInfo(config.bankInfo || { bank: '', account: '', holder: '' });
       setTelegram(config.telegramConfig || { token: '', chatId: '' });
       setShortformVideoUrl(config.shortformVideoUrl || '/인스타.mp4');
+      setLiveGuideInfo(config.liveGuideInfo || '졸리졸리 라이브에 오신 것을 환영합니다! ✨\n하단을 눌러 상품을 확인하고 하트로 응원해주세요!');
       setIsOrderingActive(config.isOrderingActive !== false);
     }
   }, [config, configLoading]);
@@ -101,6 +104,8 @@ const AdminView = ({ onBack, onEnterLiveControl, activeTab, setActiveTab }) => {
     setIsOrderingActive(newState);
     try {
       await configService.upsert('is_ordering_active', newState.toString());
+      await refetchConfigs();
+      window.dispatchEvent(new Event('configUpdated'));
       showAlert(newState ? '주문 시작' : '주문 마감', newState ? '지금부터 주문을 받을 수 있습니다.' : '주문 접수가 중단되었습니다.', newState ? 'success' : 'info');
     } catch (error) {
       setIsOrderingActive(!newState);
@@ -267,7 +272,10 @@ const AdminView = ({ onBack, onEnterLiveControl, activeTab, setActiveTab }) => {
         { key: 'bank_info', value: JSON.stringify(bankInfo) },
         { key: 'telegram_config', value: JSON.stringify(telegram) },
         { key: 'shortform_video_url', value: shortformVideoUrl },
+        { key: 'live_guide_info', value: liveGuideInfo },
       ]);
+      await refetchConfigs();
+      window.dispatchEvent(new Event('configUpdated'));
       showAlert('저장 완료', '상점 설정이 저장되었습니다.', 'success');
     } catch (error) {
       showAlert('저장 실패', error.message, 'error');
@@ -335,13 +343,19 @@ const AdminView = ({ onBack, onEnterLiveControl, activeTab, setActiveTab }) => {
                 onRemoveNewImage={(idx) => { const nf = [...imageFiles]; nf.splice(idx,1); setImageFiles(nf); const np = [...imagePreviews]; np.splice(idx,1); setImagePreviews(np); }} 
                 onAddProduct={handleAddProduct} onToggleStock={handleToggleStock} onDeleteProduct={handleDeleteProduct} 
                 onStartEditing={startEditing} onPushToLive={handlePushToLive} setImageFiles={setImageFiles} setImagePreviews={setImagePreviews} 
+                newCategoryName={newCategoryName} setNewCategoryName={setNewCategoryName} onAddCategory={handleAddCategory} onDeleteCategory={handleDeleteCategory}
               />
             )}
-            {activeTab === 'categories' && <AdminCategories categories={categories} newCategoryName={newCategoryName} setNewCategoryName={setNewCategoryName} onAddCategory={handleAddCategory} onDeleteCategory={handleDeleteCategory} />}
-            {activeTab === 'chat' && <AdminChat showAlert={showAlert} />}
-            {activeTab === 'dopamine' && <AdminDopamine showAlert={showAlert} />}
-            {activeTab === 'stats' && <AdminStats />}
-            {activeTab === 'settings' && <AdminSettings shopName={shopName} setShopName={setShopName} shopSubtitle={shopSubtitle} setShopSubtitle={setShopSubtitle} shopNotice={shopNotice} setShopNotice={setShopNotice} instaUrl={instaUrl} setInstaUrl={setInstaUrl} bankInfo={bankInfo} setBankInfo={setBankInfo} telegram={telegram} setTelegram={setTelegram} shortformVideoUrl={shortformVideoUrl} setShortformVideoUrl={setShortformVideoUrl} onSaveSettings={handleSaveSettings} />}
+            {activeTab === 'chat' && (
+              <AdminChat 
+                showAlert={showAlert} 
+                onSaveSettings={handleSaveSettings}
+              />
+            )}
+            { activeTab === 'dopamine' && <AdminDopamine showAlert={showAlert} />}
+            { activeTab === 'db' && <AdminDB showAlert={showAlert} products={products} config={config} />}
+            { activeTab === 'stats' && <AdminStats />}
+            {activeTab === 'settings' && <AdminSettings shopName={shopName} setShopName={setShopName} shopSubtitle={shopSubtitle} setShopSubtitle={setShopSubtitle} shopNotice={shopNotice} setShopNotice={setShopNotice} instaUrl={instaUrl} setInstaUrl={setInstaUrl} bankInfo={bankInfo} setBankInfo={setBankInfo} telegram={telegram} setTelegram={setTelegram} shortformVideoUrl={shortformVideoUrl} setShortformVideoUrl={setShortformVideoUrl} liveGuideInfo={liveGuideInfo} setLiveGuideInfo={setLiveGuideInfo} onSaveSettings={handleSaveSettings} />}
           </div>
         </main>
       </div>

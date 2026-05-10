@@ -12,7 +12,7 @@ const LiveProductPushSheet = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[2000] flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[7200] flex items-end justify-center" onClick={onClose}>
       <div className="w-full max-w-xl glass-gradient rounded-t-[3rem] animate-slide-up border border-white/40" onClick={e => e.stopPropagation()} style={{ height: '75vh' }}>
         <div className="p-8 h-full flex flex-col">
           <div className="flex justify-between items-center mb-8 flex-shrink-0">

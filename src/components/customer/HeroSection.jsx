@@ -4,9 +4,9 @@ import { Button } from '../ui/Common';
 
 const HeroSection = React.memo(({ instaUrl, onEnterLive, onShowHistory, onShowCart, cartCount }) => {
   return (
-    <div className="p-6 sm:p-10 mb-10 text-center animate-fade-in relative bg-transparent">
-      <div className="relative z-10 pt-20 sm:pt-32 pb-10 flex flex-col items-center">
-        <div className="mb-12 sm:mb-20 relative flex items-center justify-center">
+    <div className="p-4 sm:p-8 mb-4 text-center animate-fade-in relative bg-transparent">
+      <div className="relative z-10 pt-16 sm:pt-32 pb-4 flex flex-col items-center">
+        <div className="mb-16 sm:mb-32 relative flex items-center justify-center">
           {/* Ripple Effects */}
           <div className="absolute w-40 h-40 bg-brand-pink-dark/30 rounded-full animate-ripple pointer-events-none" style={{ animationDelay: '0s' }}></div>
           <div className="absolute w-40 h-40 bg-brand-pink-dark/20 rounded-full animate-ripple pointer-events-none" style={{ animationDelay: '1s' }}></div>
@@ -57,6 +57,13 @@ const HeroSection = React.memo(({ instaUrl, onEnterLive, onShowHistory, onShowCa
           >
             주문 내역
           </Button>
+        </div>
+
+        {/* 브랜드 라벨 (주문 내역 하단으로 이동) */}
+        <div className="mt-16 flex flex-col items-center gap-1 opacity-60">
+          <div className="w-8 h-px bg-brand-pink mx-auto mb-1 opacity-30"></div>
+          <p className="text-[10px] font-bold text-brand-pink-dark tracking-widest uppercase">joli.joli Live Collection</p>
+          <p className="text-[9px] text-gray-400">© 2026 Style Live. All rights reserved.</p>
         </div>
       </div>
     </div>

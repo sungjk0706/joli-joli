@@ -1,14 +1,14 @@
 import React, { useCallback } from 'react';
-import { Package, ShoppingBag, Users, Settings, BarChart3, MessageSquare, Zap } from 'lucide-react';
+import { Package, ShoppingBag, Users, Settings, BarChart3, MessageSquare, Zap, Video, HardDrive } from 'lucide-react';
 
 const AdminTabs = React.memo(({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: 'orders', label: '주문\n관리', icon: Package },
     { id: 'products', label: '상품\n관리', icon: ShoppingBag },
-    { id: 'categories', label: '분류\n관리', icon: Users },
     { id: 'chat', label: '채팅\n관리', icon: MessageSquare },
     { id: 'dopamine', label: '도파밍', icon: Zap },
     { id: 'stats', label: '통계', icon: BarChart3 },
+    { id: 'db', label: 'DB\n관리', icon: HardDrive },
     { id: 'settings', label: '시스템\n설정', icon: Settings }
   ];
 

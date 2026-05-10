@@ -73,6 +73,37 @@ export const productService = {
       .getPublicUrl(fileName);
     return publicUrl;
   },
+  
+  async listStorageFiles() {
+    if (!supabase) return [];
+    const { data, error } = await supabase.storage
+      .from('products')
+      .list('', {
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' },
+      });
+    if (error) throw error;
+    
+    // 유효한 파일들만 필터링 (폴더 제외)
+    const files = data.filter(item => item.id !== null);
+    
+    // 각 파일의 publicUrl 포함
+    return files.map(file => {
+      const { data: { publicUrl } } = supabase.storage
+        .from('products')
+        .getPublicUrl(file.name);
+      return { ...file, publicUrl };
+    });
+  },
+
+  async deleteStorageFile(fileName) {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { error } = await supabase.storage
+      .from('products')
+      .remove([fileName]);
+    if (error) throw error;
+  },
 
   subscribeToChanges(callback) {
     if (!supabase) return { unsubscribe: () => {} };

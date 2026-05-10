@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, X, Edit2, Trash2, Camera, Settings, Plus, Zap, Gift } from 'lucide-react';
+import { ShoppingBag, X, Edit2, Trash2, Camera, Settings, Plus, Zap, Gift, FolderPlus, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button, Input, Card, Badge, Textarea, SectionHeading } from './ui/Common';
 import LazyImage from './ui/LazyImage';
 
@@ -7,8 +7,10 @@ const AdminProducts = ({
   products, categories, newProduct, setNewProduct, imageFiles, imagePreviews, currentImages,
   editingProduct, setEditingProduct, uploading, onFileChange, onRemoveCurrentImage,
   onRemoveNewImage, onAddProduct, onToggleStock, onDeleteProduct, onStartEditing,
-  setImageFiles, setImagePreviews
+  setImageFiles, setImagePreviews,
+  newCategoryName, setNewCategoryName, onAddCategory, onDeleteCategory
 }) => {
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [selectedAdminCategory, setSelectedAdminCategory] = useState('all')
   const [optionInput, setOptionInput] = useState('')
   const [selectedZoomImage, setSelectedZoomImage] = useState(null)
@@ -23,6 +25,72 @@ const AdminProducts = ({
 
   return (
     <div className="space-y-6 sm:space-y-10 animate-fade-in">
+      {/* Category Management Section - Collapsible */}
+      <Card className="border-brand-pink-light/20 overflow-hidden">
+        <button 
+          onClick={() => setShowCategoryManager(!showCategoryManager)}
+          className="w-full px-6 py-4 flex items-center justify-between bg-zinc-50/50 hover:bg-zinc-50 transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-brand-pink/10 rounded-xl flex items-center justify-center text-brand-pink">
+              <FolderPlus size={20} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-black text-zinc-900 text-sm">상품 분류 관리</h3>
+              <p className="text-[10px] font-bold text-zinc-400">카테고리를 추가하거나 삭제하여 상품을 분류하세요.</p>
+            </div>
+          </div>
+          {showCategoryManager ? <ChevronUp size={20} className="text-zinc-400" /> : <ChevronDown size={20} className="text-zinc-400" />}
+        </button>
+
+        {showCategoryManager && (
+          <div className="p-6 sm:p-8 space-y-8 animate-slide-down">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Add Form */}
+              <div className="space-y-4">
+                <Input 
+                  label="새 분류 이름" 
+                  placeholder="예: 상의, 하의, 액세서리..." 
+                  value={newCategoryName} 
+                  onChange={e => setNewCategoryName(e.target.value)}
+                />
+                <Button 
+                  onClick={onAddCategory}
+                  variant="secondary" 
+                  className="w-full py-3 h-auto text-sm font-black"
+                  icon={Plus}
+                >
+                  분류 추가하기
+                </Button>
+              </div>
+
+              {/* List */}
+              <div className="space-y-3">
+                <label className="admin-label block mb-2 ml-1">등록된 분류 목록 ({categories.length})</label>
+                <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2 scrollbar-thin">
+                  {categories.length === 0 ? (
+                    <div className="py-8 text-center text-zinc-400 text-xs italic bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
+                      등록된 분류가 없습니다.
+                    </div>
+                  ) : (
+                    categories.map(cat => (
+                      <div key={cat.id} className="flex items-center justify-between p-3 bg-white border border-zinc-100 rounded-xl hover:border-brand-pink/30 transition-all group">
+                        <span className="font-bold text-zinc-800 text-sm">{cat.name}</span>
+                        <button 
+                          onClick={() => onDeleteCategory(cat.id)}
+                          className="p-1.5 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
       <Card 
         className={`p-4 sm:p-6 md:p-10 border-2 transition-all duration-500 ${
           editingProduct ? 'border-brand-blue-dark bg-brand-blue/5' : 'border-brand-pink-light/30'

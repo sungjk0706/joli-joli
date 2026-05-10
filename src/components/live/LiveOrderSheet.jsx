@@ -16,7 +16,7 @@ const LiveOrderSheet = ({
   if (!isOpen || !activeProduct) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[1000] flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[8500] flex items-end justify-center" onClick={onClose}>
       <div className="w-full max-w-xl glass-gradient rounded-t-[3rem] animate-slide-up border border-white/40" onClick={e => e.stopPropagation()} style={{ height: '80vh' }}>
         <div className="p-8 h-full overflow-y-auto scrollbar-thin">
           <div className="flex justify-between items-center mb-8">

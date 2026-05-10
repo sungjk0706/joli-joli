@@ -50,6 +50,7 @@ export const configService = {
         bankInfo: this.parseJSON(data.find(c => c.key === 'bank_info')?.value),
         telegramConfig: this.parseJSON(data.find(c => c.key === 'telegram_config')?.value),
         shortformVideoUrl: data.find(c => c.key === 'shortform_video_url')?.value || '/인스타.mp4',
+        liveGuideInfo: data.find(c => c.key === 'live_guide_info')?.value || '졸리졸리 라이브에 오신 것을 환영합니다! ✨\n하단을 눌러 상품을 확인하고 하트로 응원해주세요!',
       };
     } catch (e) {
       console.error('설정 로드 실패:', e);
@@ -76,6 +77,7 @@ export const configService = {
       bankInfo: { bank: '', account: '', holder: '', payLink: '' },
       telegramConfig: { token: '', chatId: '' },
       shortformVideoUrl: '/인스타.mp4',
+      liveGuideInfo: '졸리졸리 라이브에 오신 것을 환영합니다! ✨\n하단을 눌러 상품을 확인하고 하트로 응원해주세요!',
     };
   },
 };

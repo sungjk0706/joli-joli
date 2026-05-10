@@ -21,6 +21,15 @@ export const useConfigs = () => {
 
   useEffect(() => {
     fetchConfigs();
+
+    const handleConfigUpdate = () => {
+      fetchConfigs();
+    };
+
+    window.addEventListener('configUpdated', handleConfigUpdate);
+    return () => {
+      window.removeEventListener('configUpdated', handleConfigUpdate);
+    };
   }, []);
 
   return { config, loading, error, refetch: fetchConfigs };

@@ -3,6 +3,7 @@ import { Package, ShoppingBag } from 'lucide-react';
 import { Button, Input, Card, Badge } from '../ui/Common';
 import LazyImage from '../ui/LazyImage';
 import { ProductCardSkeleton } from '../ui/Skeleton';
+import ProductCard from '../ui/ProductCard';
 import { cartService } from '../../services';
 
 const ProductListSection = React.memo(({ 
@@ -117,42 +118,12 @@ const ProductListSection = React.memo(({
           </div>
         ) : (
           filteredProducts.map(product => (
-            <Card
+            <ProductCard
               key={product.id}
+              product={product}
               onClick={() => onProductClick(product)}
-              className="p-3 sm:p-4 cursor-pointer group"
-            >
-              <div className="w-full aspect-square bg-gray-50 rounded-2xl overflow-hidden shadow-inner border border-gray-100 mb-2 sm:mb-3 relative">
-                {product.image_url ? (
-                  <LazyImage src={product.image_url} alt={product.name} className="rounded-2xl" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-200">
-                    <Package size={32} />
-                  </div>
-                )}
-                {product.is_out_of_stock && (
-                  <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                    <Badge variant="gray" className="scale-90 sm:scale-110">품절</Badge>
-                  </div>
-                )}
-              </div>
-              <div className="space-y-0.5 sm:space-y-1">
-                <h4 className="font-bold text-sm sm:text-base truncate text-gray-900 group-hover:text-brand-pink-dark transition-colors">{product.name}</h4>
-                <p className="text-brand-pink-dark font-black text-base sm:text-lg">{Number(product.price || 0).toLocaleString()}원</p>
-                <div className="flex items-center justify-between mt-1 sm:mt-2">
-                   <Badge variant={product.is_out_of_stock ? 'gray' : 'white'} className="text-[9px] sm:text-[10px] px-1.5 py-0">
-                    {product.is_out_of_stock ? 'SOLD' : 'SALE'}
-                  </Badge>
-                  <button
-                    onClick={(e) => handleAddToCart(product, e)}
-                    className="w-8 h-8 rounded-full bg-brand-pink text-white flex items-center justify-center hover:bg-brand-pink-dark transition-colors"
-                    disabled={product.is_out_of_stock}
-                  >
-                    <ShoppingBag size={14} />
-                  </button>
-                </div>
-              </div>
-            </Card>
+              onActionClick={(p) => handleAddToCart(p, { stopPropagation: () => {} })}
+            />
           ))
         )}
       </div>

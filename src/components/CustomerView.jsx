@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { orderService, notificationService, configService, productService, cartService, dopamineService } from '../services';
+import { cn } from '../utils/cn';
+import { orderService, notificationService, configService, productService, cartService, dopamineService, couponService } from '../services';
 import LiveCommerceView from './LiveCommerceView';
 import HeroSection from './customer/HeroSection';
 import OrderCompleteView from './customer/OrderCompleteView';
@@ -69,6 +70,10 @@ const CustomerView = ({ isAdminMode = false, onExitAdminLive }) => {
     };
   }, [isAdminMode]);
 
+  const handleMiniModeChange = useCallback((mini) => {
+    setIsMiniMode(mini);
+  }, []);
+
   // 추첨 로드
   useEffect(() => {
     const loadRaffles = async () => {
@@ -135,10 +140,6 @@ const CustomerView = ({ isAdminMode = false, onExitAdminLive }) => {
   }, [isAdminMode]);
 
   const handleLiveBack = useCallback((targetTab) => {
-    if (document.fullscreenElement) {
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-    }
     
     if (isAdminMode) {
       onExitAdminLive(targetTab);
@@ -285,16 +286,17 @@ const CustomerView = ({ isAdminMode = false, onExitAdminLive }) => {
   }, [showAlert]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto min-h-screen pb-20 relative px-0 sm:px-4">
+    <div className="w-full max-w-7xl mx-auto pb-4 relative px-0 sm:px-4">
       {/* Main Content (Hero Section) - visible when not in full live mode */}
       {(!isLiveMode || isMiniMode) && (
-        <div key="main-content" className="animate-fade-in">
+        <div className={cn("relative z-10", !isMiniMode && "animate-fade-in")}>
           <HeroSection 
             onEnterLive={() => {
+              // 네이티브 전체 화면 요청 (주소창 숨기기)
               const docElm = document.documentElement;
-              if (docElm.requestFullscreen) docElm.requestFullscreen();
+              if (docElm.requestFullscreen) docElm.requestFullscreen().catch(() => {});
               else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
-              
+
               setIsLiveMode(true);
               setIsMiniMode(false);
               
@@ -352,8 +354,9 @@ const CustomerView = ({ isAdminMode = false, onExitAdminLive }) => {
           selectedProduct={selectedProduct}
           setSelectedProduct={setSelectedProduct}
           isMiniMode={isMiniMode}
-          onMiniModeChange={setIsMiniMode}
+          onMiniModeChange={handleMiniModeChange}
           onProductClick={(product) => setDetailProduct(product)}
+          showAlert={showAlert}
         />
       )}
 
