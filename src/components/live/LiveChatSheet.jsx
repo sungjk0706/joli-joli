@@ -1,97 +1,142 @@
-import React, { useRef, useEffect } from 'react';
-import { GlassIconButton } from '../ui/Common';
-import { X, ChevronDown, Send } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { X, ShoppingBag, Send, User, MessageCircle, MoreHorizontal, Megaphone } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { GlassIconButton } from '../ui/Common';
 
-const ChatSection = ({
-  messages, message, setMessage, onSend,
-  isLandscape = false, isExpanded, setIsExpanded,
-  isAdmin = false,
-  leftAddon = null,
-  productList = [],
-  onProductClick = null,
-  scrollTrigger = 0
+const ChatSection = ({ 
+  messages, 
+  message, 
+  setMessage, 
+  onSend, 
+  isExpanded, 
+  setIsExpanded,
+  isAdmin,
+  productList,
+  onProductClick
 }) => {
-  const scrollRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-  
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  };
-
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    onSend();
-    // 전송 후 바로 다시 포커스를 주어 키보드 유지를 시도함
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }, 10);
-  };
+  const scrollRef = React.useRef(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollToBottom();
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [messages.length, isExpanded, scrollTrigger]);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
-  const displayMessages = (isExpanded || isLandscape) ? messages.slice(-50) : [];
+  const pinnedMessage = [...messages].reverse().find(m => (m.isAdmin || m.role === 'admin') && m.type !== 'system');
 
   return (
-    <div className={`flex flex-col transition-all duration-500 ease-in-out w-full h-full`}>
-      
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-4 space-y-4 scroll-smooth no-scrollbar" ref={scrollRef}>
-        {displayMessages.map((m, idx) => (
-          <div key={idx} className="flex flex-col animate-fade-in max-w-[90%] mb-2">
-            <div className="flex flex-col items-center gap-1.5">
-              <span className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-white/70 font-black text-[13px] sm:text-[14px] tracking-tight border border-white/10 shadow-sm w-fit">
-                {m.user}
-              </span>
-              <div className="bg-black/60 backdrop-blur-lg rounded-2xl px-4 sm:px-5 py-2 sm:py-2.5 border border-white/10 shadow-lg w-fit max-w-full">
-                <p className="text-white font-bold text-[14px] sm:text-[15px] leading-relaxed text-center">{m.text}</p>
+    <div className="flex flex-col h-full bg-transparent relative">
+      {/* Pinned Message Area */}
+      {pinnedMessage && (
+        <div className="mx-4 mt-2 mb-1 animate-in fade-in slide-in-from-top-2 duration-500 sticky top-0 z-[20]">
+          <div className="bg-brand-pink/20 backdrop-blur-xl border border-brand-pink/30 rounded-xl p-3 shadow-lg flex items-start gap-3">
+            <div className="bg-brand-pink text-white p-1.5 rounded-lg shadow-inner">
+              <Megaphone size={14} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[10px] font-black text-brand-pink tracking-widest uppercase">Admin Notice</span>
               </div>
+              <p className="text-[13px] sm:text-[14px] text-white font-bold leading-snug truncate">
+                {pinnedMessage.text || pinnedMessage.content}
+              </p>
             </div>
           </div>
-        ))}
-        <div ref={messagesEndRef} className="h-px w-full" />
+        </div>
+      )}
+
+      {/* Messages area */}
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scroll-smooth"
+      >
+        {messages.map((msg, idx) => {
+          // 공지로 고정된 메시지는 본문 리스트에서 제외 (중복 방지)
+          if (msg === pinnedMessage) return null;
+
+          if (msg.type === 'system') {
+            return (
+              <div key={msg.id || idx} className="flex justify-center my-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="bg-white/5 backdrop-blur-sm px-4 py-1 rounded-full border border-white/5 shadow-sm">
+                  <span className="text-[10px] sm:text-[11px] text-white/50 font-medium tracking-tight">
+                    {msg.text}
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
+          const isMsgAdmin = msg.isAdmin || msg.role === 'admin';
+          const nickname = msg.user || msg.nickname || (isMsgAdmin ? '매니저' : '고객');
+          const content = msg.text || msg.content;
+
+          return (
+            <div 
+              key={idx} 
+              className={cn(
+                "flex flex-col",
+                isMsgAdmin ? "items-end" : "items-start"
+              )}
+            >
+              <div className={cn(
+                "max-w-[85%] rounded-2xl px-4 py-2 text-sm sm:text-base shadow-lg transition-all",
+                isMsgAdmin 
+                  ? "bg-brand-pink-dark/90 text-brand-pink-contrast rounded-tr-none border border-white/20" 
+                  : "bg-black/60 backdrop-blur-md text-white rounded-tl-none border border-white/10 shadow-xl"
+              )}>
+                <div className="flex items-center gap-1.5 mb-1 opacity-70">
+                  {isMsgAdmin ? <User size={10} /> : <MessageCircle size={10} />}
+                  <span className="font-bold text-[11px] sm:text-[12px]">{nickname}</span>
+                </div>
+                <p className="leading-relaxed break-words whitespace-pre-wrap font-medium">{content}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <div className="p-4 pb-8 flex gap-3 items-center bg-transparent">
-        {leftAddon}
+
+      {/* Input area */}
+      <div className="p-4 pb-8 flex flex-col gap-3 bg-transparent">
+        <div className="flex gap-2 px-1">
+          {['💖', '✨', '👏'].map(emoji => (
+            <button
+              key={emoji}
+              onClick={() => onSend(emoji)}
+              className="w-10 h-10 flex items-center justify-center bg-white/10 backdrop-blur-xl border border-white/10 rounded-full text-lg active:scale-90 transition-all hover:bg-white/20 shadow-lg"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
         <form 
-          className="flex-1 relative" 
-          autoComplete="off" 
-          onSubmit={handleFormSubmit}
+          onSubmit={(e) => { e.preventDefault(); onSend(); }}
+          className="flex gap-3 items-center"
+          autoComplete="off"
         >
           <input
-            ref={inputRef}
             type="search"
-            name="joli_chat_message_field"
-            id="joli_chat_input"
+            name="joli_live_chat_input"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="메시지를 입력하세요..."
-            autoComplete="one-time-code"
-            autoCorrect="off"
-            autoCapitalize="off"
+            autoComplete="off"
+            inputMode="text"
             spellCheck="false"
-            className="w-full bg-black/60 backdrop-blur-md border border-white/20 rounded-2xl py-3 sm:py-4 px-4 sm:px-6 text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition-all font-bold text-sm shadow-xl appearance-none"
+            className="flex-1 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-5 py-3 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all shadow-inner text-sm sm:text-base [appearance:none] [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
           />
-          <button 
+          <GlassIconButton 
             type="submit"
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 bg-white text-gray-900 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+            disabled={!message.trim()}
+            className={cn(
+              "w-11 h-11 transition-all",
+              message.trim() ? "bg-black/60 text-white border-white/20" : "opacity-40"
+            )}
           >
-            <Send size={18} sm:size={20} />
-          </button>
+            <Send size={18} />
+          </GlassIconButton>
         </form>
-      </div>
     </div>
+  </div>
   );
 };
 
@@ -107,28 +152,6 @@ const LiveChatSheet = ({
   onProductClick,
   isDesktopInline = false
 }) => {
-  const [keyboardHeight, setKeyboardHeight] = React.useState(0);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.visualViewport) return;
-
-    const handleResize = () => {
-      const vh = window.innerHeight;
-      const vvh = window.visualViewport.height;
-      const offset = vh - vvh;
-      setKeyboardHeight(Math.max(0, offset));
-    };
-
-    window.visualViewport.addEventListener('resize', handleResize);
-    window.visualViewport.addEventListener('scroll', handleResize);
-    handleResize(); // Initial check
-
-    return () => {
-      window.visualViewport.removeEventListener('resize', handleResize);
-      window.visualViewport.removeEventListener('scroll', handleResize);
-    };
-  }, []);
-
   const [shouldRender, setShouldRender] = React.useState(isOpen);
   const [isClosing, setIsClosing] = React.useState(false);
 
@@ -148,7 +171,6 @@ const LiveChatSheet = ({
 
   if (!shouldRender && !isDesktopInline) return null;
 
-  // Inline mode for Desktop sidebar
   if (isDesktopInline) {
     return (
       <div className="flex-1 overflow-hidden">
@@ -162,7 +184,6 @@ const LiveChatSheet = ({
           isAdmin={isAdmin} 
           productList={productList} 
           onProductClick={onProductClick} 
-          scrollTrigger={keyboardHeight}
         />
       </div>
     );
@@ -171,36 +192,32 @@ const LiveChatSheet = ({
   return (
     <div 
       className={cn(
-        "fixed inset-0 z-[7500] flex flex-col justify-end transform-gpu transition-all duration-500 ease-in-out",
-        isClosing ? "pointer-events-none" : "pointer-events-auto"
+        "fixed inset-0 z-[7500] flex flex-col justify-end pointer-events-none transition-opacity duration-300",
+        isClosing ? "opacity-0" : "opacity-100"
       )}
-      style={{ 
-        bottom: `${keyboardHeight}px`, 
-        willChange: 'bottom'
-      }}
+      style={{ height: '100dvh', maxHeight: '100dvh' }}
     >
-      {/* Backdrop for closing */}
+      {/* Backdrop */}
       <div 
         className={cn(
-          "absolute inset-0 bg-black/20 backdrop-blur-[2px] transition-opacity duration-500",
+          "absolute inset-0 bg-black/20 backdrop-blur-[2px] transition-opacity duration-500 pointer-events-auto",
           isOpen && !isClosing ? "opacity-100" : "opacity-0"
         )} 
         onClick={onClose} 
       />
       
-      {/* Bottom Sheet - Subtle Gradient for Stability */}
+      {/* Bottom Sheet */}
       <div 
         className={cn(
-          "relative z-[2600] w-full max-h-[75dvh] bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col overflow-hidden transition-all duration-500 cubic-bezier(0.2, 0.8, 0.2, 1)",
-          isOpen && !isClosing ? "animate-slide-up opacity-100 translate-y-0" : "opacity-0 translate-y-full"
+          "relative z-[2600] w-full max-h-[85%] bg-transparent flex flex-col overflow-hidden transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto will-change-transform",
+          isOpen && !isClosing ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
         )}
       >
-        {/* Floating Header */}
-        <div className="w-full py-4 flex flex-col items-center">
-          <div className="flex items-center justify-between w-full px-6 sm:px-8">
-            <span className="text-white font-black text-lg sm:text-xl md:text-2xl tracking-tight drop-shadow-lg">실시간 채팅</span>
+        <div className="w-full py-3 flex flex-col items-center">
+          <div className="flex items-center justify-between w-full px-6">
+            <span className="text-white font-black text-lg drop-shadow-lg">실시간 채팅</span>
             <GlassIconButton onClick={onClose} title="닫기">
-              <X size={20} sm:size={22} />
+              <X size={20} />
             </GlassIconButton>
           </div>
         </div>
@@ -216,7 +233,6 @@ const LiveChatSheet = ({
             isAdmin={isAdmin} 
             productList={productList} 
             onProductClick={onProductClick} 
-            scrollTrigger={keyboardHeight}
           />
         </div>
       </div>

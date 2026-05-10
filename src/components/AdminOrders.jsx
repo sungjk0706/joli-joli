@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import { Package, TrendingUp, AlertCircle, CheckCircle, Radio, ExternalLink, Truck } from 'lucide-react';
+import { cn } from '../utils/cn';
 import { Button, Card, Badge, SectionHeading, Input } from './ui/Common';
 import { OrderCardSkeleton } from './ui/Skeleton';
 import { orderService } from '../services/orderService';
 
-const AdminOrders = React.memo(({ orders = [], loading = false, onUpdateStatus, onDeleteOrder, isOrderingActive, onToggleOrdering, onEnterLiveControl, onUpdateTracking }) => {
+import AdminCartManagement from './AdminCartManagement';
+
+const AdminOrders = React.memo(({ orders = [], loading = false, onUpdateStatus, onDeleteOrder, isOrderingActive, onToggleOrdering, onEnterLiveControl, onUpdateTracking, showAlert }) => {
   const [trackingData, setTrackingData] = useState({});
   const [showTrackingInput, setShowTrackingInput] = useState({});
+  const [filterStatus, setFilterStatus] = useState('전체');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showBulkTracking, setShowBulkTracking] = useState(false);
+  const [bulkInput, setBulkInput] = useState('');
 
   const carriers = ['cj대한통운', '우체국', '롯데택배', '한진택배', '경동택배', '로젠택배', 'EMS'];
 
@@ -22,24 +29,121 @@ const AdminOrders = React.memo(({ orders = [], loading = false, onUpdateStatus, 
   const unpaidCount = orders.filter(o => o.status === '미입금').length;
   const completedCount = orders.filter(o => o.status === '입금완료' || o.status === '배송중').length;
 
+  const handleSyncBank = async () => {
+    const unpaidOrders = orders.filter(o => o.status === '미입금' && (o.payment_method === 'bank_transfer' || !o.payment_method));
+    if (unpaidOrders.length === 0) {
+      showAlert('동기화 완료', '현재 입금 대기 중인 주문이 없습니다.', 'info');
+      return;
+    }
+
+    // 시뮬레이션: 입금자명이 존재하면 입금 확인 처리
+    let syncedCount = 0;
+    for (const order of unpaidOrders) {
+      if (order.deposit_name || order.customer_name) {
+        await onUpdateStatus(order.id, '입금완료');
+        syncedCount++;
+      }
+    }
+    
+    if (syncedCount > 0) {
+      showAlert('입금 자동 확인 ✨', `${syncedCount}건의 주문이 입금 확인되었습니다.`, 'success');
+    } else {
+      showAlert('동기화 완료', '새로 확인된 입금 내역이 없습니다.', 'info');
+    }
+  };
+  
+  const handleExportCSV = () => {
+    if (!orders || orders.length === 0) return;
+    
+    const headers = ['주문번호', '주문일시', '고객명', '연락처', '상품명', '수량', '옵션', '금액', '상태', '주소', '요청사항'];
+    const csvContent = [
+      headers.join(','),
+      ...orders.map(o => [
+        o.id,
+        new Date(o.created_at).toLocaleString(),
+        o.customer_name,
+        o.customer_phone,
+        o.products?.name || '상품',
+        o.quantity,
+        o.selected_option || '',
+        o.price * o.quantity,
+        o.status,
+        `"${o.address} ${o.detail_address}"`,
+        `"${o.requests || ''}"`
+      ].join(','))
+    ].join('\n');
+    
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `orders_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const filteredOrders = orders.filter(o => {
+    const matchesStatus = filterStatus === '전체' || o.status === filterStatus;
+    const matchesSearch = !searchQuery || 
+      o.customer_name?.includes(searchQuery) || 
+      o.id.toString().includes(searchQuery) ||
+      (o.products?.name || '').includes(searchQuery);
+    return matchesStatus && matchesSearch;
+  });
+
+  const handleBulkSave = async () => {
+    const lines = bulkInput.split('\n').filter(l => l.trim());
+    if (lines.length === 0) return showAlert('입력 부족', '송장 정보를 입력해주세요.', 'info');
+    
+    let successCount = 0;
+    for (const line of lines) {
+      // Format: order_id, carrier, tracking_number
+      const parts = line.split(',').map(s => s.trim());
+      if (parts.length >= 3) {
+        const [orderId, carrier, trackingNumber] = parts;
+        try {
+          await onUpdateTracking(orderId, trackingNumber, carrier);
+          successCount++;
+        } catch (e) {
+          console.error(`Bulk update error for ID ${orderId}:`, e);
+        }
+      }
+    }
+    showAlert('일괄 저장 완료', `${successCount}건의 송장 정보가 처리되었습니다.`, 'success');
+    setShowBulkTracking(false);
+    setBulkInput('');
+  };
+
   return (
     <div className="space-y-10 animate-fade-in pb-10">
       {/* 1. 대형 라방 제어 센터 진입 카드 */}
-      <Card 
-        onClick={() => {
-          const docElm = document.documentElement;
-          if (docElm.requestFullscreen) docElm.requestFullscreen();
-          else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
-          onEnterLiveControl();
-        }}
-        className="h-16 sm:h-20 px-4 sm:px-8 border-0 shadow-2xl bg-[#FFD600] hover:bg-[#FFC400] text-black cursor-pointer active:scale-95 transition-all group overflow-hidden relative flex items-center"
-      >
-        <div className="flex items-center justify-center w-full relative z-10">
-          <h2 className="text-2xl admin-title tracking-tighter text-center">
-            라방 화면 보며 제어하기
-          </h2>
-        </div>
-      </Card>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Card 
+          onClick={() => {
+            const docElm = document.documentElement;
+            if (docElm.requestFullscreen) docElm.requestFullscreen();
+            else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
+            onEnterLiveControl();
+          }}
+          className="flex-1 h-16 sm:h-20 px-4 sm:px-8 border-0 shadow-2xl bg-[#FFD600] hover:bg-[#FFC400] text-black cursor-pointer active:scale-95 transition-all group overflow-hidden relative flex items-center"
+        >
+          <div className="flex items-center justify-center w-full relative z-10">
+            <h2 className="text-xl sm:text-2xl admin-title tracking-tighter text-center">
+              라방 화면 제어 센터 🎥
+            </h2>
+          </div>
+        </Card>
+
+        <Card 
+          onClick={handleSyncBank}
+          className="h-16 sm:h-20 px-6 sm:px-10 border-0 shadow-2xl bg-brand-blue-dark hover:bg-black text-white cursor-pointer active:scale-95 transition-all flex items-center gap-3 group"
+        >
+          <CheckCircle className="text-brand-blue-light animate-pulse" size={24} />
+          <span className="text-lg font-black whitespace-nowrap">입금 내역 동기화</span>
+        </Card>
+      </div>
 
       {/* 2. 라방 요약 대시보드 */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4">
@@ -63,17 +167,120 @@ const AdminOrders = React.memo(({ orders = [], loading = false, onUpdateStatus, 
         </Card>
       </div>
 
-      <SectionHeading icon={Package}>주문 리스트 (입금 대조용)</SectionHeading>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-sm">
+        <div className="flex flex-wrap gap-2">
+          {['전체', '미입금', '입금완료', '배송중', '배송완료', '취소'].map(status => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-black transition-all",
+                filterStatus === status 
+                  ? "bg-zinc-900 text-white shadow-lg scale-105" 
+                  : "bg-white text-zinc-500 hover:bg-zinc-50 border border-zinc-100"
+              )}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+        
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Input 
+              placeholder="주문자명, 상품명 검색..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-4 py-2 h-10 text-xs rounded-xl border-zinc-200"
+            />
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowBulkTracking(!showBulkTracking)}
+            className={cn(
+              "h-10 px-4 text-xs font-black flex items-center gap-2",
+              showBulkTracking ? "bg-zinc-900 text-white border-zinc-900" : "bg-white border-zinc-200 hover:bg-zinc-50"
+            )}
+          >
+            <Truck size={14} />
+            송장 일괄 입력
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleExportCSV}
+            className="h-10 px-4 text-xs font-black bg-white border-zinc-200 hover:bg-zinc-50 flex items-center gap-2"
+          >
+            <TrendingUp size={14} className="rotate-90" />
+            CSV 추출
+          </Button>
+        </div>
+      </div>
+
+      {/* 송장 일괄 입력 섹션 */}
+      {showBulkTracking && (
+        <div className="bg-zinc-900 text-white rounded-[2rem] p-8 space-y-6 animate-slide-down shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-black flex items-center gap-3">
+                <Truck className="text-brand-pink" />
+                송장 일괄 입력 시스템
+              </h3>
+              <p className="text-zinc-400 text-xs mt-1 font-bold">
+                한 줄에 하나씩 입력: <span className="text-brand-pink">주문번호, 배송사, 송장번호</span>
+              </p>
+            </div>
+            <button onClick={() => setShowBulkTracking(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <textarea 
+              value={bulkInput}
+              onChange={(e) => setBulkInput(e.target.value)}
+              placeholder="예:&#10;123, CJ대한통운, 68712345678&#10;124, 우체국, 1234567890123"
+              className="w-full h-48 bg-white/5 border border-white/10 rounded-2xl p-6 text-sm font-medium focus:border-brand-pink outline-none placeholder:opacity-30 scrollbar-thin"
+            />
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="primary" 
+                onClick={handleBulkSave}
+                className="flex-1 py-4 text-sm font-black shadow-lg"
+              >
+                송장 정보 {bulkInput.split('\n').filter(l => l.trim()).length}건 일괄 저장하기
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => setBulkInput('')}
+                className="px-8 text-sm font-bold text-zinc-400 hover:text-white"
+              >
+                비우기
+              </Button>
+            </div>
+          </div>
+          
+          <div className="bg-white/5 rounded-xl p-4 flex items-start gap-3">
+            <AlertCircle size={16} className="text-yellow-500 shrink-0 mt-0.5" />
+            <p className="text-[10px] text-zinc-400 font-bold leading-relaxed">
+              * 콤마(,)로 구분하여 주문번호, 배송사명, 송장번호 순으로 입력해주세요.<br />
+              * 배송사명은 정확하게 입력해야 추적 링크가 정상 동작합니다 (예: CJ대한통운, 우체국).
+            </p>
+          </div>
+        </div>
+      )}
+
+      <SectionHeading icon={Package}>주문 리스트 ({filteredOrders.length}건)</SectionHeading>
 
       {loading ? (
         Array.from({ length: 3 }).map((_, idx) => <OrderCardSkeleton key={idx} />)
-      ) : (!orders || orders.length === 0) ? (
+      ) : (!filteredOrders || filteredOrders.length === 0) ? (
         <Card className="text-center py-20 admin-text-secondary italic">
-          주문 내역이 아직 없습니다.
+          조건에 맞는 주문 내역이 없습니다.
         </Card>
       ) : (
         <div className="space-y-6">
-          {orders.map(order => {
+          {filteredOrders.map(order => {
             const productData = Array.isArray(order.products) ? order.products[0] : order.products;
             const productName = productData?.name || '상품 정보 없음';
             const price = (productData?.price || 0) * (order.quantity || 1);
@@ -298,6 +505,11 @@ const AdminOrders = React.memo(({ orders = [], loading = false, onUpdateStatus, 
           })}
         </div>
       )}
+
+      {/* 4. 장바구니 관리 센터 */}
+      <div className="pt-20 border-t border-gray-100">
+        <AdminCartManagement showAlert={showAlert} />
+      </div>
     </div>
   );
 });

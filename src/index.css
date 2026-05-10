@@ -19,7 +19,12 @@
   --font-size-admin-lg: 18px;
 }
 
-html, body, #root, * {
+html, body, #root {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  outline: none;
+}
+
+* {
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
@@ -29,7 +34,7 @@ html, body, #root, * {
 
 @layer base {
   body {
-    @apply bg-brand-pink-light text-base;
+    @apply bg-brand-pink-light text-base overflow-x-hidden;
   }
 
   *:focus {
@@ -78,6 +83,20 @@ html, body, #root, * {
 
   .admin-number {
     @apply text-right tabular-nums font-black;
+  }
+
+  /* Boutique Specific UI Utilities */
+  .boutique-glass {
+    @apply bg-white/80 backdrop-blur-2xl border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.1)];
+  }
+
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl;
+  }
+
+  /* Mobile centering fix for fixed overlays */
+  .fixed-center {
+    @apply fixed inset-0 flex items-center justify-center z-[11000] p-4 sm:p-8;
   }
 }
 
@@ -130,8 +149,8 @@ html, body, #root, * {
 
 
 @keyframes ripple {
-  0% { transform: scale(0.6); opacity: 0.6; }
-  100% { transform: scale(3.5); opacity: 0; }
+  0% { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(5.5); opacity: 0; }
 }
 
 .animate-ripple {
@@ -158,24 +177,31 @@ html, body, #root, * {
   -webkit-transform: translateZ(0);
 }
 
-/* Force remove tap highlight on mobile for all buttons and interactive elements */
-button, 
-a, 
-.cursor-pointer {
+/* 모바일 브라우저 터치 잔상 및 사각형 하이라이트 완벽 제거 */
+* {
   -webkit-tap-highlight-color: transparent !important;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
+  -webkit-touch-callout: none !important;
+  outline: none !important;
 }
 
-/* Eliminate rectangular shadow artifacts during active transitions on mobile */
+button, 
+a, 
+.cursor-pointer,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 터치 시 발생하는 모든 종류의 브라우저 기본 그림자/잔상 차단 */
 button:active, 
 a:active,
-.active\:scale-95:active {
+.active\:scale-95:active,
+.active\:scale-90:active {
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
   outline: none !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  background-clip: padding-box; /* 그라데이션 버튼 잔상 방지 */
 }
 
 /* Prevent hover effects on touch devices to avoid "sticky" highlights and rendering artifacts */
@@ -189,4 +215,33 @@ a:active,
 
 svg {
   pointer-events: none;
+}
+
+/* 라이브 버튼 전용 생기 애니메이션 */
+@keyframes liveBreathing {
+  0%, 100% { transform: scale(1); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+  50% { transform: scale(1.04); box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.25); }
+}
+
+@keyframes liveShimmer {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%) skewX(-20deg); }
+}
+
+.animate-live-alive {
+  animation: liveBreathing 3s ease-in-out infinite;
+}
+
+.live-shimmer-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.live-shimmer-effect::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.25), transparent);
+  animation: liveShimmer 3.5s infinite;
 }

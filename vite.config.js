@@ -8,6 +8,35 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/@supabase')) {
+            return 'vendor-supabase';
+          }
+          if (id.includes('node_modules/recharts')) {
+            return 'vendor-recharts';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-lucide';
+          }
+          if (id.includes('node_modules/@tanstack') || id.includes('node_modules/zustand')) {
+            return 'vendor-state';
+          }
+          if (id.includes('/src/components/admin/')) {
+            return 'chunk-admin';
+          }
+          if (id.includes('/src/components/customer/')) {
+            return 'chunk-customer';
+          }
+        },
+      },
+    },
+  },
   server: {
     // 주식 앱(5173)과 충돌하지 않게 3000번 포트로 고정!
     port: 3000,

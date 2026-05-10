@@ -149,7 +149,7 @@ const AdminChat = ({
           </button>
         </div>
 
-        <div className="bg-zinc-900 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl flex flex-col h-[calc(100vh-350px)] min-h-[500px]">
+        <div className="bg-zinc-900 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl flex flex-col h-[500px]">
           <div className="bg-zinc-800/50 px-8 py-5 border-b border-white/5 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />

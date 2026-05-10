@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { cartService, productService } from '../services';
+import { supabase } from '../lib/supabase';
 import { ShoppingCart, Trash2, User, Package, AlertCircle, RefreshCw } from 'lucide-react';
 import { Card, Button } from './ui/Common';
 
@@ -11,10 +12,14 @@ const AdminCartManagement = ({ showAlert }) => {
   const loadAllCarts = async () => {
     setLoading(true);
     try {
-      // Note: cartService currently only has getCart(phone). 
-      // For Admin, we'll need a way to get ALL carts.
-      // I'll assume we can query supabase directly here for admin purposes.
-      const { data, error } = await window.supabase
+      if (!supabase) {
+        console.warn('Supabase not configured - cart management disabled in preview mode');
+        setCarts([]);
+        setSummary({ totalItems: 0, totalUsers: 0 });
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
         .from('cart')
         .select('*, products(*)');
       
@@ -30,7 +35,7 @@ const AdminCartManagement = ({ showAlert }) => {
       });
     } catch (error) {
       console.error('장바구니 데이터 로드 실패:', error);
-      // showAlert('오류', '장바구니 데이터를 불러오지 못했습니다.', 'error');
+      setCarts([]);
     } finally {
       setLoading(false);
     }
@@ -44,10 +49,14 @@ const AdminCartManagement = ({ showAlert }) => {
     if (!window.confirm('30일 이상 된 오래된 장바구니 데이터를 모두 삭제하시겠습니까?')) return;
     
     try {
+      if (!supabase) {
+        showAlert('오류', 'Supabase가 설정되지 않았습니다.', 'error');
+        return;
+      }
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const { error } = await window.supabase
+      const { error } = await supabase
         .from('cart')
         .delete()
         .lt('updated_at', thirtyDaysAgo.toISOString());

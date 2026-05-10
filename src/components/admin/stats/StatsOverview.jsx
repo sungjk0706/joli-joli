@@ -18,24 +18,31 @@ const StatCard = ({ title, value, unit, subValue, icon: Icon, colorClass }) => (
   </div>
 );
 
-const StatsOverview = ({ overallStats, popularProducts, customerStats }) => {
+const StatsOverview = ({ overallStats, popularProducts, customerStats, viewerCount = 0 }) => {
   return (
     <div className="space-y-6">
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard 
+          title="현재 접속자" 
+          value={viewerCount} 
+          unit="명" 
+          icon={Users} 
+          colorClass="brand-pink" 
+        />
         <StatCard 
           title="총 주문" 
           value={overallStats?.totalOrders || 0} 
           unit="건" 
           icon={ShoppingBag} 
-          iconBg="bg-brand-pink" 
+          colorClass="zinc-900" 
         />
         <StatCard 
           title="총 매출" 
           value={(overallStats?.totalSales || 0).toLocaleString()} 
           unit="원" 
           icon={Wallet} 
-          iconBg="bg-green-500" 
+          colorClass="brand-pink" 
         />
         <StatCard 
           title="오늘 매출" 
@@ -43,7 +50,7 @@ const StatsOverview = ({ overallStats, popularProducts, customerStats }) => {
           unit="원" 
           subValue={`${overallStats?.todayOrders || 0}건`}
           icon={Calendar} 
-          iconBg="bg-blue-500" 
+          colorClass="brand-pink" 
         />
         <StatCard 
           title="이번 달" 
@@ -51,7 +58,7 @@ const StatsOverview = ({ overallStats, popularProducts, customerStats }) => {
           unit="원" 
           subValue={`${overallStats?.thisMonthOrders || 0}건`}
           icon={TrendingUp} 
-          iconBg="bg-purple-500" 
+          colorClass="brand-pink" 
         />
       </div>
 

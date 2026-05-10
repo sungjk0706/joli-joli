@@ -61,8 +61,8 @@ const HeroSection = React.memo(({ instaUrl, onEnterLive, onShowHistory, onShowCa
             주문 내역
           </Button>
         </div>
-
-        {/* 브랜드 라벨 (주문 내역 하단으로 이동) */}
+        
+        {/* 브랜드 라벨 (주문 내역 하단) */}
         <div className="mt-4 flex flex-col items-center gap-1 opacity-60">
           <div className="w-8 h-px bg-brand-pink mx-auto mb-1 opacity-30"></div>
           <p className="text-[10px] font-bold text-brand-pink-dark tracking-widest uppercase">joli.joli Live Collection</p>

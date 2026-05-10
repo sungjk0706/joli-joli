@@ -16,7 +16,7 @@ const LiveProductListView = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[7800] flex flex-col justify-end">
+    <div className="fixed inset-0 z-[7800] flex flex-col justify-end pointer-events-auto">
       {/* 배경 오버레이 */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
       

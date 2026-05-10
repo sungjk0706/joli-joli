@@ -117,7 +117,7 @@ END;
 $$;
 
 -- 7. 추첨 참여 가능 여부 확인 RPC 함수
-CREATE OR REPLACE FUNCTION check_raffle_availability(raffle_id INTEGER, customer_phone TEXT)
+CREATE OR REPLACE FUNCTION check_raffle_availability(p_raffle_id INTEGER, p_customer_phone TEXT)
 RETURNS TABLE(
   is_available BOOLEAN,
   already_entered BOOLEAN,
@@ -127,12 +127,12 @@ RETURNS TABLE(
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  entry_count INTEGER;
+  v_entry_count INTEGER;
 BEGIN
   -- 이미 참여했는지 확인
-  SELECT COUNT(*) INTO entry_count
+  SELECT COUNT(*) INTO v_entry_count
   FROM raffle_entries
-  WHERE raffle_id = raffle_id AND customer_phone = customer_phone;
+  WHERE raffle_entries.raffle_id = p_raffle_id AND raffle_entries.customer_phone = p_customer_phone;
 
   RETURN QUERY
   SELECT
@@ -140,12 +140,12 @@ BEGIN
      AND r.is_completed = false
      AND r.start_time <= NOW()
      AND r.end_time >= NOW()
-     AND (r.max_participants IS NULL OR (SELECT COUNT(*) FROM raffle_entries WHERE raffle_id = r.id) < r.max_participants)
-     AND entry_count = 0) as is_available,
-    (entry_count > 0) as already_entered,
-    (SELECT COUNT(*) FROM raffle_entries WHERE raffle_id = r.id) as current_participants,
+     AND (r.max_participants IS NULL OR (SELECT COUNT(*) FROM raffle_entries re WHERE re.raffle_id = r.id) < r.max_participants)
+     AND v_entry_count = 0) as is_available,
+    (v_entry_count > 0) as already_entered,
+    (SELECT COUNT(*) FROM raffle_entries re WHERE re.raffle_id = r.id)::INTEGER as current_participants,
     r.max_participants
   FROM raffles r
-  WHERE r.id = raffle_id;
+  WHERE r.id = p_raffle_id;
 END;
 $$;

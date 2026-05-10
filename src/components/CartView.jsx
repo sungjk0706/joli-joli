@@ -69,16 +69,16 @@ const CartView = ({ customerPhone, showAlert, onCheckout, onClose }) => {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[11000] flex items-center justify-center p-4">
         <div className="w-16 h-16 border-4 border-brand-pink border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-        <div className="sticky top-0 bg-white border-b border-gray-100 p-6 flex items-center justify-between z-10">
+    <div className="fixed-center bg-black/60 backdrop-blur-md">
+      <div className="boutique-glass rounded-[2.5rem] w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up">
+        <div className="sticky top-0 bg-white/20 backdrop-blur-md border-b border-gray-100 p-6 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             <ShoppingBag className="text-brand-pink" size={28} />
             <h3 className="font-black text-2xl text-gray-900">장바구니</h3>
@@ -88,16 +88,16 @@ const CartView = ({ customerPhone, showAlert, onCheckout, onClose }) => {
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-all"
+            className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center hover:bg-white/80 transition-all shadow-sm"
           >
-            <X size={22} />
+            <X size={22} className="text-gray-800" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 max-h-[calc(85vh-200px)]">
           {cartItems.length === 0 ? (
             <div className="text-center py-20">
-              <div className="w-24 h-24 bg-gray-50 rounded-full mx-auto flex items-center justify-center mb-6 text-gray-200">
+              <div className="w-24 h-24 bg-white/40 rounded-full mx-auto flex items-center justify-center mb-6 text-gray-200">
                 <ShoppingBag size={56} />
               </div>
               <p className="font-black text-xl text-gray-400">장바구니가 비어있어요 🛍️</p>
@@ -106,8 +106,8 @@ const CartView = ({ customerPhone, showAlert, onCheckout, onClose }) => {
           ) : (
             <div className="space-y-4">
               {cartItems.map((item) => (
-                <div key={item.id} className="flex gap-5 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-100">
+                <div key={item.id} className="flex gap-5 p-5 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/40 shadow-sm">
+                  <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-white/80 border border-white/20">
                     {item.products?.image_url && (
                       <img src={item.products.image_url} alt={item.products.name} className="w-full h-full object-cover" />
                     )}
@@ -116,7 +116,7 @@ const CartView = ({ customerPhone, showAlert, onCheckout, onClose }) => {
                     <div>
                       <h4 className="font-black text-lg text-gray-900 truncate leading-tight">{item.products?.name}</h4>
                       {item.selected_option && (
-                        <p className="inline-block mt-1 text-[11px] font-black text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md italic">
+                        <p className="inline-block mt-1 text-[11px] font-black text-gray-400 bg-white/50 px-2 py-0.5 rounded-md italic">
                           옵션: {item.selected_option}
                         </p>
                       )}
@@ -125,7 +125,7 @@ const CartView = ({ customerPhone, showAlert, onCheckout, onClose }) => {
                       <p className="font-black text-xl text-brand-pink-dark">
                         {(item.products?.price || 0).toLocaleString()}원
                       </p>
-                      <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-100">
+                      <div className="flex items-center gap-1 bg-white/80 p-1 rounded-xl border border-white/40 shadow-sm">
                         <button
                           onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                           className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-gray-400 hover:text-brand-pink active:scale-90 transition-all"
@@ -135,7 +135,7 @@ const CartView = ({ customerPhone, showAlert, onCheckout, onClose }) => {
                         <span className="w-8 text-center font-black text-sm text-gray-900">{item.quantity}</span>
                         <button
                           onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 rounded-lg gradient-primary text-white flex items-center justify-center active:scale-90 transition-all shadow-md"
+                          className="w-8 h-8 rounded-lg bg-brand-pink-dark text-white flex items-center justify-center active:scale-90 transition-all shadow-md"
                         >
                           <Plus size={14} strokeWidth={3} />
                         </button>
@@ -156,13 +156,13 @@ const CartView = ({ customerPhone, showAlert, onCheckout, onClose }) => {
 
         {/* Footer */}
         {cartItems.length > 0 && (
-          <div className="relative z-10 p-6 bg-white/60 backdrop-blur-xl border-t border-brand-pink/10 space-y-4 shadow-inner">
+          <div className="p-6 bg-white/40 backdrop-blur-xl border-t border-brand-pink/10 space-y-4">
             <div className="flex justify-between items-end px-2">
               <div>
                 <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Total Amount</p>
                 <p className="text-[13px] font-bold text-gray-500 italic">배송비는 졸리졸리가 쏩니다! 🎁</p>
               </div>
-              <span className="font-black text-3xl text-gradient-pink leading-none">{totalAmount.toLocaleString()}원</span>
+              <span className="font-black text-3xl text-brand-pink-dark leading-none">{totalAmount.toLocaleString()}원</span>
             </div>
 
             <div className="flex gap-3">

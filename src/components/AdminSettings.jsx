@@ -4,10 +4,9 @@ import { Settings, Camera, Eye, EyeOff, Layout, BellRing, Save, ShieldCheck, Sha
 import { Button, Input, Textarea, Card, SectionHeading } from './ui/Common'
 
 const AdminSettings = ({
-  newPassword, setNewPassword, shopName, setShopName, shopSubtitle, setShopSubtitle,
+  shopName, setShopName, shopSubtitle, setShopSubtitle,
   shopNotice, setShopNotice, instaUrl, setInstaUrl, bankInfo, setBankInfo,
-  telegram, setTelegram, shortformVideoUrl, setShortformVideoUrl,
-  liveGuideInfo, setLiveGuideInfo, onSaveSettings
+  businessInfo, setBusinessInfo, portoneConfig, setPortoneConfig, onSaveSettings
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = React.useRef(null);
@@ -40,6 +39,59 @@ const AdminSettings = ({
           </div>
         </div>
       </Card>
+      {/* 2. 사업자 정보 (Legally required) */}
+      <Card className="p-10 border-2 border-zinc-200/50">
+        <SectionHeading icon={ShieldCheck}>사업자 정보 설정</SectionHeading>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <Input 
+            label="대표자 성함" 
+            placeholder="예: 홍길동" 
+            value={businessInfo.ceo} 
+            onChange={e => setBusinessInfo({ ...businessInfo, ceo: e.target.value })} 
+          />
+          <Input 
+            label="사업자등록번호" 
+            placeholder="000-00-00000" 
+            value={businessInfo.businessNumber} 
+            onChange={e => setBusinessInfo({ ...businessInfo, businessNumber: e.target.value })} 
+          />
+          <Input 
+            label="통신판매업신고번호" 
+            placeholder="제 2024-서울-0000호" 
+            value={businessInfo.mailOrderNumber} 
+            onChange={e => setBusinessInfo({ ...businessInfo, mailOrderNumber: e.target.value })} 
+          />
+          <Input 
+            label="고객센터 전화번호" 
+            placeholder="02-1234-5678" 
+            value={businessInfo.phone} 
+            onChange={e => setBusinessInfo({ ...businessInfo, phone: e.target.value })} 
+          />
+          <Input 
+            label="대표 이메일" 
+            placeholder="contact@joli-joli.com" 
+            value={businessInfo.email} 
+            onChange={e => setBusinessInfo({ ...businessInfo, email: e.target.value })} 
+          />
+          <Input 
+            label="개인정보보호책임자" 
+            placeholder="예: 홍길동" 
+            value={businessInfo.privacyOfficer} 
+            onChange={e => setBusinessInfo({ ...businessInfo, privacyOfficer: e.target.value })} 
+          />
+          <div className="md:col-span-2">
+            <Input 
+              label="사업장 소재지 (주소)" 
+              placeholder="서울특별시 강남구..." 
+              value={businessInfo.address} 
+              onChange={e => setBusinessInfo({ ...businessInfo, address: e.target.value })} 
+            />
+          </div>
+        </div>
+        <p className="text-[10px] text-zinc-400 font-bold mt-6 ml-2">
+          * 위 정보는 전자상거래법에 따라 쇼핑몰 하단(Footer)에 의무적으로 표시되어야 하는 정보입니다.
+        </p>
+      </Card>
 
       {/* 2. 외부 서비스 연동 */}
       <Card className="p-10 border-2 border-brand-blue-light/30">
@@ -58,60 +110,35 @@ const AdminSettings = ({
             <p className="admin-text-secondary text-xs mt-2 ml-4">카카오톡 {'>'} 페이 {'>'} 내 코드(QR) {'>'} 링크 복사해서 붙여넣으세요!</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
-            <Input label="텔레그램 봇 토큰" placeholder="Token" value={telegram.token} onChange={e => setTelegram({ ...telegram, token: e.target.value })} className="font-mono text-xs bg-gray-50" />
-            <Input label="텔레그램 채팅 ID" placeholder="Chat ID" value={telegram.chatId} onChange={e => setTelegram({ ...telegram, chatId: e.target.value })} className="font-mono text-xs bg-gray-50" />
-          </div>
-        </div>
-      </Card>
-
-      {/* 3. 라이브 방송 기본 설정 */}
-      <Card className="p-10 border-2 border-brand-pink-light/30">
-        <SectionHeading icon={Camera}>라이브 방송 및 안내 설정</SectionHeading>
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="admin-label block ml-1 text-sm">기본 숏폼 영상 URL (또는 인스타 링크)</label>
-              <div className="flex items-center gap-2">
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="video/*"
-                  onChange={handleVideoUpload}
-                  ref={fileInputRef}
-                />
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  className="px-4 py-2 h-auto text-[10px] font-bold"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  icon={Upload}
+          <div className="space-y-4 pt-6 border-t border-brand-blue-light/20">
+            <label className="admin-label block mb-2 ml-1">포트원(Portone) 카드 결제 설정</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-50 p-8 rounded-[2.5rem] border border-zinc-200">
+              <Input 
+                label="가맹점 식별코드 (Merchant ID)" 
+                placeholder="imp00000000" 
+                value={portoneConfig.merchantId} 
+                onChange={e => setPortoneConfig({ ...portoneConfig, merchantId: e.target.value })} 
+              />
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black text-brand-contrast/50 ml-3 uppercase tracking-widest">PG사 선택</label>
+                <select 
+                  value={portoneConfig.pg} 
+                  onChange={e => setPortoneConfig({ ...portoneConfig, pg: e.target.value })}
+                  className="w-full bg-white/40 border-2 border-white/80 rounded-2xl px-6 py-4 text-brand-contrast font-bold focus:outline-none focus:border-brand-pink transition-all"
                 >
-                  {isUploading ? '업로드 중...' : '파일 찾기'}
-                </Button>
+                  <option value="kcp">NHN KCP</option>
+                  <option value="tosspayments">토스페이먼츠</option>
+                  <option value="nice">나이스페이</option>
+                  <option value="html5_inicis">KG이니시스</option>
+                  <option value="kakaopay">카카오페이</option>
+                </select>
               </div>
             </div>
-            <Input 
-              placeholder="예: https://instagram.com/live/... 또는 업로드한 파일 주소" 
-              value={shortformVideoUrl} 
-              onChange={e => setShortformVideoUrl(e.target.value)} 
-            />
-            <p className="text-[10px] text-zinc-400 font-bold ml-2">라이브 방송이 없을 때 재생될 기본 영상 주소입니다. 개발 기간에는 임시 영상을, 실제 운영 시에는 인스타 링크를 입력하세요.</p>
-          </div>
-
-          <div className="space-y-4">
-            <Textarea 
-              label="라이브 이용 가이드 내용" 
-              placeholder="시청자들에게 보여줄 안내 문구 (결제, 배송, 교환/환불 등)" 
-              value={liveGuideInfo} 
-              onChange={e => setLiveGuideInfo(e.target.value)} 
-              rows={4}
-            />
-            <p className="text-[10px] text-zinc-400 font-bold ml-2">라이브 화면의 '?' 버튼 클릭 시 노출되는 정보입니다.</p>
+            <p className="admin-text-secondary text-xs mt-2 ml-4">* 카드 결제를 활성화하려면 포트원 관리자 콘솔에서 발급받은 식별코드를 입력하세요.</p>
           </div>
         </div>
       </Card>
+
       
       <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-50 flex justify-center">
         <Button type="submit" variant="primary" className="w-full max-w-md py-6 text-xl shadow-2xl" icon={Save}>

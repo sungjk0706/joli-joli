@@ -2,7 +2,6 @@ import React from 'react';
 import { Database, HardDrive, Search } from 'lucide-react';
 import { Card, SectionHeading } from './ui/Common';
 import AdminStorage from './AdminStorage';
-import AdminCartManagement from './AdminCartManagement';
 
 const AdminDB = ({ showAlert, products, config }) => {
   return (
@@ -30,10 +29,6 @@ const AdminDB = ({ showAlert, products, config }) => {
         </Card>
       </div>
 
-      {/* Cart Management Section */}
-      <div className="space-y-6 pt-10 border-t border-zinc-100">
-        <AdminCartManagement showAlert={showAlert} />
-      </div>
 
       {/* Future Sections Placeholder */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-30 pt-10 border-t border-zinc-100">

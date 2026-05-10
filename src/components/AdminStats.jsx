@@ -7,7 +7,7 @@ import StatsOverview from './admin/stats/StatsOverview';
 import SalesStats from './admin/stats/SalesStats';
 import { ProductRanking, CustomerRanking } from './admin/stats/RankingStats';
 
-const AdminStats = () => {
+const AdminStats = ({ viewerCount = 0 }) => {
   const [overallStats, setOverallStats] = useState(null);
   const [dailyStats, setDailyStats] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState([]);
@@ -88,6 +88,7 @@ const AdminStats = () => {
             overallStats={overallStats} 
             popularProducts={popularProducts} 
             customerStats={customerStats} 
+            viewerCount={viewerCount}
           />
         )}
         

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingBag, X, Edit2, Trash2, Camera, Settings, Plus, Zap, Gift, FolderPlus, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button, Input, Card, Badge, Textarea, SectionHeading } from './ui/Common';
 import LazyImage from './ui/LazyImage';
+import { cn } from '../utils/cn';
 
 const AdminProducts = ({
   products, categories, newProduct, setNewProduct, imageFiles, imagePreviews, currentImages,
@@ -14,6 +15,7 @@ const AdminProducts = ({
   const [selectedAdminCategory, setSelectedAdminCategory] = useState('all')
   const [optionInput, setOptionInput] = useState('')
   const [selectedZoomImage, setSelectedZoomImage] = useState(null)
+  const [viewMode, setViewMode] = useState('grid') // grid | list
 
   React.useEffect(() => {
     const handlePop = (e) => { if (e.state && e.state.type === 'zoom') setSelectedZoomImage(null); }
@@ -192,78 +194,129 @@ const AdminProducts = ({
           <span className="text-xs sm:text-sm font-bold text-gray-400 pb-0 sm:pb-2">총 {products.length}개</span>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-          <Button variant={selectedAdminCategory === 'all' ? 'primary' : 'outline'} className="px-3 sm:px-5 py-2 sm:py-2.5 flex-none text-[10px] sm:text-xs" onClick={() => setSelectedAdminCategory('all')}>전체</Button>
-          {categories.map(cat => (
-            <Button key={cat.id} variant={selectedAdminCategory === cat.id ? 'primary' : 'outline'} className="px-3 sm:px-5 py-2 sm:py-2.5 flex-none text-[10px] sm:text-xs" onClick={() => setSelectedAdminCategory(cat.id)}>{cat.name}</Button>
-          ))}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+            <Button variant={selectedAdminCategory === 'all' ? 'primary' : 'outline'} className="px-3 sm:px-5 py-2 sm:py-2.5 flex-none text-[10px] sm:text-xs" onClick={() => setSelectedAdminCategory('all')}>전체</Button>
+            {categories.map(cat => (
+              <Button key={cat.id} variant={selectedAdminCategory === cat.id ? 'primary' : 'outline'} className="px-3 sm:px-5 py-2 sm:py-2.5 flex-none text-[10px] sm:text-xs" onClick={() => setSelectedAdminCategory(cat.id)}>{cat.name}</Button>
+            ))}
+          </div>
+          
+          <div className="flex bg-gray-100 p-1 rounded-xl gap-1 self-end sm:self-auto">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={cn("px-4 py-1.5 rounded-lg text-[10px] font-black transition-all", viewMode === 'grid' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400")}
+            >
+              그리드형
+            </button>
+            <button 
+              onClick={() => setViewMode('list')}
+              className={cn("px-4 py-1.5 rounded-lg text-[10px] font-black transition-all", viewMode === 'list' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400")}
+            >
+              리스트형
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className={cn(
+          "grid gap-4 sm:gap-6",
+          viewMode === 'grid' ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" : "grid-cols-1"
+        )}>
           {products.filter(p => selectedAdminCategory === 'all' || String(p.category_id) === String(selectedAdminCategory)).map(product => (
-            <Card key={product.id} className="p-3 sm:p-4">
-              <div className="flex gap-3 sm:gap-4">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-gray-50 overflow-hidden shadow-inner border border-gray-100 flex-shrink-0">
+            viewMode === 'grid' ? (
+              <Card key={product.id} className="p-0 overflow-hidden group flex flex-col h-full border-zinc-100 hover:border-brand-pink/30 transition-all shadow-sm hover:shadow-xl">
+                <div className="aspect-[4/5] relative bg-gray-50 overflow-hidden">
                   {(product.image_urls?.[0] || product.image_url) ? (
-                    <LazyImage src={product.image_urls?.[0] || product.image_url} alt="" className="rounded-xl sm:rounded-2xl" />
-                  ) : <div className="w-full h-full flex items-center justify-center text-gray-200"><ShoppingBag size={20} sm:size={24} /></div>}
-                </div>
-                <div className="flex-1 min-w-0 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
-                      <Badge variant="gray" className="text-[8px] sm:text-[9px] px-1.5 sm:px-2">{(categories.find(c => c.id === product.category_id))?.name || '분류없음'}</Badge>
-                      {product.is_limited && (
-                        <Badge variant="purple" className="text-[8px] sm:text-[9px] px-1.5 sm:px-2 flex items-center gap-0.5 sm:gap-1">
-                          <Gift size={8} sm:size={10} />
-                          한정판
-                        </Badge>
-                      )}
-                      {product.flash_sale_enabled && (
-                        <Badge variant="orange" className="text-[8px] sm:text-[9px] px-1.5 sm:px-2 flex items-center gap-0.5 sm:gap-1">
-                          <Zap size={8} sm:size={10} />
-                          선참순
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="admin-text-base truncate">{product.name}</h3>
-                      <div className="flex items-center gap-4 mt-2">
-                        <span className="admin-text-secondary admin-number">
-                          {product.price.toLocaleString()}원
-                        </span>
-                        <span className="admin-label admin-number">
-                          재고: {product.stock}개
-                        </span>
-                      </div>
-                    </div>
+                    <LazyImage src={product.image_urls?.[0] || product.image_url} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  ) : <div className="w-full h-full flex items-center justify-center text-gray-200"><ShoppingBag size={40} /></div>}
+                  
+                  <div className="absolute top-2 left-2 flex flex-col gap-1">
+                    <Badge variant="gray" className="text-[8px] bg-white/80 backdrop-blur-md">{(categories.find(c => c.id === product.category_id))?.name || '분류없음'}</Badge>
+                    {product.is_limited && <Badge variant="purple" className="text-[8px]">한정판</Badge>}
                   </div>
                   
-                  <div className="flex gap-1.5 sm:gap-2 mt-2">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold text-blue-600 border-blue-50 bg-blue-50/30" 
-                      onClick={() => onStartEditing(product)}
-                    >
-                      수정
-                    </Button>
-                    <Button 
-                      variant={product.is_out_of_stock ? 'primary' : 'outline'} 
-                      className={`flex-1 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold ${!product.is_out_of_stock ? 'text-gray-500 bg-gray-50 border-gray-100' : ''}`} 
-                      onClick={() => onToggleStock(product)}
-                    >
-                      {product.is_out_of_stock ? '판매중' : '품절'}
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      className="flex-1 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold text-red-400 bg-red-50/30" 
-                      onClick={() => onDeleteProduct(product.id)}
-                    >
-                      삭제
-                    </Button>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 px-4">
+                    <Button variant="primary" className="flex-1 py-2 text-[10px] h-auto font-black" onClick={() => onStartEditing(product)}>수정</Button>
+                    <Button variant="secondary" className="flex-1 py-2 text-[10px] h-auto font-black" onClick={() => onToggleStock(product)}>{product.is_out_of_stock ? '판매중' : '품절'}</Button>
                   </div>
                 </div>
-              </div>
-            </Card>
+                <div className="p-3 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-black text-zinc-900 text-xs sm:text-sm truncate mb-1">{product.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-500 font-bold text-[10px] sm:text-xs admin-number">{product.price.toLocaleString()}원</span>
+                      <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-md", product.stock <= 5 ? "bg-red-50 text-red-500" : "bg-zinc-50 text-zinc-400")}>
+                        재고 {product.stock}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              <Card key={product.id} className="p-3 sm:p-4">
+                <div className="flex gap-3 sm:gap-4">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-gray-50 overflow-hidden shadow-inner border border-gray-100 flex-shrink-0">
+                    {(product.image_urls?.[0] || product.image_url) ? (
+                      <LazyImage src={product.image_urls?.[0] || product.image_url} alt="" className="rounded-xl sm:rounded-2xl" />
+                    ) : <div className="w-full h-full flex items-center justify-center text-gray-200"><ShoppingBag size={20} sm:size={24} /></div>}
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
+                        <Badge variant="gray" className="text-[8px] sm:text-[9px] px-1.5 sm:px-2">{(categories.find(c => c.id === product.category_id))?.name || '분류없음'}</Badge>
+                        {product.is_limited && (
+                          <Badge variant="purple" className="text-[8px] sm:text-[9px] px-1.5 sm:px-2 flex items-center gap-0.5 sm:gap-1">
+                            <Gift size={8} sm:size={10} />
+                            한정판
+                          </Badge>
+                        )}
+                        {product.flash_sale_enabled && (
+                          <Badge variant="orange" className="text-[8px] sm:text-[9px] px-1.5 sm:px-2 flex items-center gap-0.5 sm:gap-1">
+                            <Zap size={8} sm:size={10} />
+                            선참순
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="admin-text-base truncate">{product.name}</h3>
+                        <div className="flex items-center gap-4 mt-2">
+                          <span className="admin-text-secondary admin-number">
+                            {product.price.toLocaleString()}원
+                          </span>
+                          <span className="admin-label admin-number">
+                            재고: {product.stock}개
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-1.5 sm:gap-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold text-blue-600 border-blue-50 bg-blue-50/30" 
+                        onClick={() => onStartEditing(product)}
+                      >
+                        수정
+                      </Button>
+                      <Button 
+                        variant={product.is_out_of_stock ? 'primary' : 'outline'} 
+                        className={`flex-1 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold ${!product.is_out_of_stock ? 'text-gray-500 bg-gray-50 border-gray-100' : ''}`} 
+                        onClick={() => onToggleStock(product)}
+                      >
+                        {product.is_out_of_stock ? '판매중' : '품절'}
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        className="flex-1 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold text-red-400 bg-red-50/30" 
+                        onClick={() => onDeleteProduct(product.id)}
+                      >
+                        삭제
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )
           ))}
         </div>
       </div>

@@ -10,7 +10,11 @@ const LiveHeader = ({
   onBack,
   showAlert,
   viewMode,
-  likeCount = 0
+  likeCount = 0,
+  viewerCount = 1291,
+  onProductListOpen,
+  onLike,
+  onReaction
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(!!(document.fullscreenElement || document.webkitFullscreenElement));
@@ -116,7 +120,7 @@ const LiveHeader = ({
     if (showAlert) {
       showAlert(
         '방송 정보 📺', 
-        `제목: ${activeProduct?.name || '졸리졸리 라이브'}\n호스트: joli.joli\n시청자: 1,291명\n\n졸리졸리만의 감성적인 프리미엄 아동복 컬렉션 실시간 방송입니다.`,
+        `제목: ${activeProduct?.name || '졸리졸리 라이브'}\n호스트: joli.joli\n시청자: ${Number(viewerCount).toLocaleString()}명\n\n졸리졸리만의 감성적인 프리미엄 아동복 컬렉션 실시간 방송입니다.`,
         'info'
       );
     }
@@ -130,25 +134,52 @@ const LiveHeader = ({
             <StatusBadge variant="red">
               <span className="uppercase">LIVE</span>
             </StatusBadge>
-            <StatusBadge variant="dark">
-              <span>1,291 시청</span>
+            <StatusBadge variant="dark" className="cursor-pointer active:scale-95 transition-all hover:bg-zinc-800" onClick={handleShowInfo}>
+              <span>{Number(viewerCount).toLocaleString()} 시청</span>
             </StatusBadge>
-            <StatusBadge variant="pink">
-              <Heart size={10} className="fill-white animate-pulse" />
+            <StatusBadge 
+              variant="dark" 
+              className="cursor-pointer active:scale-95 transition-all hover:bg-zinc-800 group"
+              onClick={onLike}
+            >
+              <Heart size={10} className="fill-white animate-pulse group-hover:text-brand-pink transition-colors" />
               <span>{Number(likeCount).toLocaleString()}</span>
             </StatusBadge>
           </div>
-          <h2 className="text-white text-[15px] sm:text-[17px] md:text-[19px] font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] flex items-center gap-1.5 tracking-tight mt-0.5">
-            ✨ {activeProduct?.name || '졸리졸리 라이브 컬렉션'} 💥
-          </h2>
-          <div className="flex items-center gap-1.5 text-white/80 text-[10px] sm:text-[11px] font-bold mt-0.5">
-            <span>100cm</span>
-            <span className="w-[1px] h-2.5 bg-white/30" />
-            <span>SIZE 100</span>
-            <span className="w-[1px] h-2.5 bg-white/30" />
-            <span>모델 착용</span>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <button 
+              onClick={() => onReaction?.('custom', activeProduct?.liveEmoji || '✨')}
+              className="hover:scale-125 active:scale-90 transition-all duration-300 filter drop-shadow-md text-lg"
+            >
+              {activeProduct?.liveEmoji || '✨'}
+            </button>
+            <h2 className="text-white text-[15px] sm:text-[17px] md:text-[19px] font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] tracking-tight">
+              {activeProduct?.name || '졸리졸리 라이브 컬렉션'}
+            </h2>
+            <button 
+              onClick={() => onReaction?.('custom', activeProduct?.liveEmoji || '💥')}
+              className="hover:scale-125 active:scale-90 transition-all duration-300 filter drop-shadow-md text-lg"
+            >
+              {activeProduct?.liveEmoji || '💥'}
+            </button>
+
+            {activeProduct?.liveTag && (
+              <span className="ml-1 px-2 py-0.5 bg-gradient-to-r from-brand-pink to-brand-pink-dark text-brand-pink-contrast text-[10px] font-black rounded-md shadow-lg animate-bounce-subtle">
+                {activeProduct.liveTag}
+              </span>
+            )}
           </div>
-          <button className="mt-2 w-fit bg-black/30 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full flex items-center gap-2 text-white text-[11px] sm:text-[12px] font-bold hover:bg-white/20 transition-all shadow-xl group">
+          <div className="flex items-center gap-1.5 text-white/80 text-[10px] sm:text-[11px] font-bold mt-0.5">
+            <span>{activeProduct?.category || 'Kids'}</span>
+            <span className="w-[1px] h-2.5 bg-white/30" />
+            <span>{activeProduct?.price ? `${Number(activeProduct.price).toLocaleString()}원` : '특가 진행 중'}</span>
+            <span className="w-[1px] h-2.5 bg-white/30" />
+            <span>{activeProduct?.is_out_of_stock ? '품절 임박' : '재고 여유'}</span>
+          </div>
+          <button 
+            onClick={onProductListOpen}
+            className="mt-2 w-fit bg-black/30 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full flex items-center gap-2 text-white text-[11px] sm:text-[12px] font-bold hover:bg-white/20 transition-all shadow-xl group"
+          >
             <div className="w-4 h-4 bg-brand-pink rounded-full flex items-center justify-center text-[10px] sm:text-[11px] group-hover:scale-110 transition-all">%</div>
             혜택 보기
             <ChevronDown size={14} sm:size={16} className="opacity-60" />

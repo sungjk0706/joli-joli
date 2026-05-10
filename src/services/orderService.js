@@ -84,7 +84,7 @@ export const orderService = {
       '한진택배': `https://www.hanjin.com/kor/CustomerService/customerService_cs_02.do?wbl_num=${trackingNumber}`,
       '경동택배': `https://kdex.com/kdex/servlet/trk.trkResult?barcode=${trackingNumber}`,
       '로젠택배': `https://www.ilogen.com/i/logistics/goods/tracking.do?slipno=${trackingNumber}`,
-      'EMS': `https://trace.epost.go.kr/ctt13trace RetrieveDetailServRCCS?POST_ID=${trackingNumber}`,
+      'EMS': `https://trace.epost.go.kr/ctt13traceRetrieveDetailServRCCS?POST_ID=${trackingNumber}`,
     };
 
     return carriers[carrier] || null;

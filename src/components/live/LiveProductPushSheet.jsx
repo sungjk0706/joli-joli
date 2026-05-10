@@ -8,6 +8,7 @@ const LiveProductPushSheet = ({
   onPushToLive 
 }) => {
   const [selectedIdsForPush, setSelectedIdsForPush] = useState([]);
+  const [metadata, setMetadata] = useState({}); // { productId: { emoji: '', tag: '' } }
 
   if (!isOpen) return null;
 
@@ -35,8 +36,27 @@ const LiveProductPushSheet = ({
                     <div className="flex-1 min-w-0">
                       <p className={`font-black truncate ${isSelected ? 'text-brand-pink' : 'text-gray-900'}`}>{prod.name}</p>
                       <p className="text-gray-400 font-bold text-xs">{Number(prod.price).toLocaleString()}원</p>
+                      
+                      {isSelected && (
+                        <div className="mt-3 flex gap-2 animate-fade-in" onClick={e => e.stopPropagation()}>
+                          <input 
+                            type="text" 
+                            placeholder="이모지 (예: ✨)" 
+                            value={metadata[prod.id]?.emoji || ''}
+                            onChange={(e) => setMetadata(prev => ({ ...prev, [prod.id]: { ...prev[prod.id], emoji: e.target.value } }))}
+                            className="w-16 px-3 py-2 bg-white rounded-xl border border-brand-pink/20 text-sm focus:outline-none focus:border-brand-pink"
+                          />
+                          <input 
+                            type="text" 
+                            placeholder="강조 문구 (예: 오늘만 특가!)" 
+                            value={metadata[prod.id]?.tag || ''}
+                            onChange={(e) => setMetadata(prev => ({ ...prev, [prod.id]: { ...prev[prod.id], tag: e.target.value } }))}
+                            className="flex-1 px-3 py-2 bg-white rounded-xl border border-brand-pink/20 text-sm focus:outline-none focus:border-brand-pink"
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-brand-pink bg-brand-pink' : 'border-gray-200'}`}>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-brand-pink bg-brand-pink' : 'border-gray-200'}`}>
                       {isSelected && <Check size={14} className="text-brand-pink-contrast" />}
                     </div>
                   </div>
@@ -47,8 +67,16 @@ const LiveProductPushSheet = ({
           <div className="pt-4 border-t border-gray-100 flex-shrink-0">
             <button 
               onClick={() => { 
-                onPushToLive(allProducts.filter(p => selectedIdsForPush.includes(p.id))); 
+                const pushedData = allProducts
+                  .filter(p => selectedIdsForPush.includes(p.id))
+                  .map(p => ({
+                    id: String(p.id),
+                    emoji: metadata[p.id]?.emoji || '✨',
+                    tag: metadata[p.id]?.tag || ''
+                  }));
+                onPushToLive(pushedData); 
                 setSelectedIdsForPush([]); 
+                setMetadata({});
                 onClose(); 
               }} 
               disabled={selectedIdsForPush.length === 0} 

@@ -156,8 +156,8 @@ export const dopamineService = {
     
     // 1. 참여 가능 여부 확인
     const { data: availability, error: checkError } = await supabase.rpc('check_raffle_availability', {
-      raffle_id: raffleId,
-      customer_phone: customerPhone
+      p_raffle_id: raffleId,
+      p_customer_phone: customerPhone
     });
     
     if (checkError) throw checkError;

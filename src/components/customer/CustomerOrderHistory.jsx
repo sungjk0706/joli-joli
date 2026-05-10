@@ -99,12 +99,10 @@ const CustomerOrderHistory = ({ showAlert, onReorder }) => {
   };
 
   return (
-    <div className="bg-white/40 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-8 shadow-2xl border border-white/60 relative z-10 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-brand-pink/5 to-transparent pointer-events-none" />
-      
-      <h2 className="font-black text-2xl text-gray-900 mb-8 flex items-center gap-3 relative z-10">
-        <div className="w-10 h-10 bg-brand-pink/10 rounded-2xl flex items-center justify-center text-brand-pink">
-          <Package size={24} />
+    <div className="w-full p-4 sm:p-6 relative z-10">
+      <h2 className="font-black text-xl sm:text-2xl text-gray-900 mb-6 flex items-center gap-3">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 bg-brand-pink/10 rounded-xl flex items-center justify-center text-brand-pink">
+          <Package size={20} sm:size={24} />
         </div>
         주문 내역 조회
       </h2>

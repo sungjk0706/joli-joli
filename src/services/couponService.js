@@ -153,11 +153,16 @@ export const couponService = {
     });
 
     if (updateError) {
-      // RPC가 없으면 직접 업데이트
+      const { data: current, error: fetchError } = await supabase
+        .from('coupons')
+        .select('used_count')
+        .eq('id', couponId)
+        .single();
+      if (fetchError) throw fetchError;
       await supabase
         .from('coupons')
-        .update({ 
-          used_count: supabase.raw('used_count + 1'),
+        .update({
+          used_count: (current.used_count || 0) + 1,
           updated_at: new Date().toISOString(),
         })
         .eq('id', couponId);

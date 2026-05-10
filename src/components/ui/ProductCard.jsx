@@ -26,7 +26,7 @@ const ProductCard = ({
       <div 
         onClick={onClick}
         className={cn(
-          "group relative flex items-center gap-3 p-2 bg-white/95 backdrop-blur-sm rounded-xl cursor-pointer active:scale-95 transition-all duration-300 shadow-md hover:shadow-lg border-0 outline-none",
+          "group relative flex items-center gap-3 p-2 bg-white/95 backdrop-blur-sm rounded-xl cursor-pointer active:scale-95 transition-all duration-300 shadow-md hover:shadow-lg border border-brand-pink/20 ring-1 ring-inset ring-white/10 outline-none",
           className
         )}
       >

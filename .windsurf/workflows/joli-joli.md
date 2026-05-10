@@ -20,13 +20,25 @@
 | 파일 | 역할 |
 |------|------|
 | `App.jsx` | 뷰 전환 (customer/admin/setup), 히스토리 관리 |
-| `components/CustomerView.jsx` | 고객 메인 화면, 라이브 진입 |
-| `components/AdminView.jsx` | 관리자 대시보드, 탭 전환 |
-| `components/LiveCommerceView.jsx` | 라이브 전체 로직, 3단계 뷰 시스템 |
+| `components/CustomerView.jsx` | 고객 화면 orchestrator — React.lazy로 기기별 분기 |
+| `components/AdminView.jsx` | 관리자 orchestrator — React.lazy로 기기별 분기 |
+| `components/LiveCommerceView.jsx` | 라이브 orchestrator — React.lazy로 기기별 분기 |
+| `components/customer/phone/` | 고객 Phone 전용 UI |
+| `components/customer/tablet/` | 고객 Tablet 전용 UI |
+| `components/customer/desktop/` | 고객 Desktop 전용 UI |
+| `components/admin/mobile/` | 어드민 Phone 전용 UI (5-tabs) |
+| `components/admin/tablet/` | 어드민 Tablet 전용 UI (6-tabs) |
+| `components/admin/desktop/` | 어드민 Desktop 전용 UI |
+| `components/live/` | 라이브 기기별 UI + 공통 하위 컴포넌트 |
 | `components/ProductDetailView.jsx` | 상품 상세 페이지 |
 | `components/CartView.jsx` | 장바구니 |
-| `services/` | Supabase CRUD 연동 (products, orders, cart 등) |
-| `hooks/` | React 커스텀 훅 (useProducts, useOrders 등) |
+| `services/` | Supabase CRUD 연동 (11개 서비스) |
+| `hooks/queries/` | TanStack Query 훅 (enabled: isSupabaseConfigured()) |
+| `hooks/live/` | 라이브 전용 훅 (useLiveRealtime, useLiveGestures) |
+| `hooks/useDeviceType.js` | phone/tablet/desktop 자동 감지 |
+| `hooks/useAdminLogicV2.js` | 어드민 비즈니스 로직 통합 훅 |
+| `stores/` | Zustand 전역 상태 (cart, live, session) |
+| `lib/supabase.js` | Supabase 클라이언트 + isSupabaseConfigured() |
 
 ---
 
@@ -41,6 +53,76 @@ Supabase Realtime → onBroadcast/onPostgresChanges
   viewMode 상태 (SPLIT/PORTRAIT/LANDSCAPE)
   → CSS transform/position 갱신
   → 하드웨어 가속 (transform-gpu, will-change)
+
+TanStack Query (서버 상태):
+  enabled: isSupabaseConfigured()  ← 반드시 포함
+  → Supabase 미설정 시 쿼리 실행 안 함
+
+Zustand (클라이언트 상태):
+  cartStore / liveStore / sessionStore
+  → Supabase와 무관하게 항상 동작
+```
+
+---
+
+## 3-1. 컴포넌트 아키텍처 (3-way 기기 분기)
+
+```
+App.jsx
+├── CustomerView.jsx     [orchestrator — React.lazy + Suspense]
+│   ├── [isPhone]   → customer/phone/CustomerViewPhone
+│   ├── [isTablet]  → customer/tablet/CustomerViewTablet
+│   ├── [isDesktop] → customer/desktop/CustomerViewDesktop
+│   └── LiveCommerceView.jsx  [orchestrator — React.lazy]
+│       ├── [isPhone]   → live/LiveCommercePhone
+│       ├── [isTablet]  → live/LiveCommerceTablet
+│       └── [isDesktop] → live/LiveCommerceDesktop
+├── AdminView.jsx        [orchestrator — React.lazy + Suspense]
+│   ├── [!loggedIn] → admin/AdminLoginSection
+│   ├── [isPhone]   → admin/mobile/AdminMobileView  (5-tabs)
+│   ├── [isTablet]  → admin/tablet/AdminTabletView  (6-tabs)
+│   └── [else]      → admin/desktop/AdminDesktopView
+└── SetupView.jsx        (Supabase 미설정 시)
+```
+
+**규칙**: 새 기기별 컴포넌트 추가 시
+1. `React.lazy(() => import(...))` 사용
+2. Orchestrator에서 `React.Suspense`로 감싸기
+3. `sharedProps` 또는 `adminProps`에 필요한 props 추가
+
+---
+
+## 3-2. 번들 구조 (vite.config.js — manualChunks 함수형)
+
+```
+index.js          9.89 KB   (앱 진입점)
+chunk-admin      182 KB    (src/components/admin/*)
+chunk-customer   114 KB    (src/components/customer/*)
+vendor-react     200 KB    (react + react-dom)
+vendor-supabase  206 KB    (@supabase/supabase-js)
+vendor-recharts  372 KB    (recharts)
+vendor-lucide     34 KB    (lucide-react)
+vendor-state      44 KB    (@tanstack/react-query + zustand)
+```
+정상 빌드: exit code 0, 500KB 경고 없음
+
+---
+
+## 3-3. DB Migration 순서 (supabase/migrations/)
+
+```
+000_initial_schema.sql          products(stock 포함)/orders/categories/configs DDL
+001_add_sales_count.sql          products.sales_count + 인덱스
+002_add_increment_sales_count_rpc.sql  increment/decrement_sales_count RPC
+003_add_tracking_number.sql      orders.tracking_number/carrier
+004_add_stats_views.sql          daily/monthly_sales_stats 뷰
+005_add_payment_method.sql       orders.payment_method
+006_add_coupons.sql              coupons/coupon_usages + increment_coupon_usage RPC
+007_add_cart.sql                 cart 테이블
+008_add_reviews.sql              reviews 테이블
+009_add_dopamine_features.sql    flash_sales/raffles/raffle_entries/raffle_winners
+                                 + check_raffle_availability RPC (파라미터: p_raffle_id, p_customer_phone)
+010_add_place_order_rpc.sql      place_order / decrement_stock RPC
 ```
 
 ---
@@ -149,7 +231,7 @@ will-change: transform, orientation;
 ## 9. 컨텍스트 관리
 
 ### 새 세션 시작 시 (최우선)
-1. `src/docs/live_commerce_v3_handover.md` 읽고 이전 작업 상태 복원
+1. `.windsurf/HANDOVER.md` 읽고 이전 작업 상태 복원
 2. 없으면 "이전 작업 내역이 없습니다. 새로 시작할까요?" 대기
 3. 복원 후 한 줄 요약 보고
 
@@ -158,7 +240,7 @@ will-change: transform, orientation;
 - 사용자가 "인계서/정리/다음 세션" 언급 시
 - 세션 종료 예상 시 / 심각한 에러로 중단 시
 
-저장 위치: `src/docs/live_commerce_v3_handover.md` (항상 덮어쓰기)
+저장 위치: `.windsurf/HANDOVER.md` (항상 덮어쓰기)
 
 ---
 
@@ -174,6 +256,11 @@ will-change: transform, orientation;
 - [ ] 예외 처리가 오류를 노출하는가?
 - [ ] 테스트(구문/빌드/진단) 수행했는가?
 - [ ] 사용자 승인을 받았는가?
+- [ ] 새 TanStack Query 훅의 `enabled`에 `isSupabaseConfigured()` 포함했는가?
+- [ ] 새 기기별 컴포넌트를 `React.lazy`로 추가했는가?
+- [ ] SQL RPC 파라미터명에 `p_` 접두사를 사용했는가?
+- [ ] JS RPC 호출부 파라미터명이 SQL 함수 시그니처와 일치하는가?
+- [ ] `supabase.raw()` 대신 SELECT 후 UPDATE 패턴을 사용했는가?
 
 ---
 
