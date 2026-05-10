@@ -82,10 +82,10 @@ function App() {
   return (
     <div className="min-h-screen relative">
       {/* 상단 고정 관리자 로그인 버튼 */}
-      <div className="fixed top-4 left-4 z-50">
+      <div className="fixed top-4 left-4 z-50 pointer-events-none" style={{ isolation: 'isolate' }}>
         <button 
           onClick={() => setView('admin')}
-          className="flex items-center justify-center w-14 h-14 text-brand-pink-dark bg-white/80 backdrop-blur-md rounded-full border-2 border-brand-pink/30 shadow-lg hover:scale-110 active:scale-95 transition-all"
+          className="flex items-center justify-center w-14 h-14 text-brand-pink-dark bg-white/95 rounded-full border-2 border-brand-pink/30 shadow-lg hover:scale-110 active:scale-95 transition-all pointer-events-auto"
           title="관리자 로그인"
         >
           <Settings size={24} />

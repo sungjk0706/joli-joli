@@ -4,6 +4,9 @@ import { cn } from '../../utils/cn'
 export const Button = ({ 
   children, 
   onClick, 
+  href,
+  target,
+  rel,
   type = 'button', 
   variant = 'primary', 
   className = '', 
@@ -27,15 +30,24 @@ export const Button = ({
     xl: 'px-12 py-6 text-xl'
   }
 
-  // 기본 사이즈는 md, xl 등 클래스명에 따라 유동적으로 조절 가능하도록 함
   const variantStyle = variants[variant] || variants.primary
+  const combinedClassName = cn(baseStyles, variantStyle, sizes[variant] || sizes.md, className)
+
+  if (href) {
+    return (
+      <a href={href} target={target} rel={rel} className={combinedClassName}>
+        {Icon && <Icon size={20} />}
+        {children}
+      </a>
+    )
+  }
 
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={cn(baseStyles, variantStyle, sizes[variant] || sizes.md, className)}
+      className={combinedClassName}
     >
       {Icon && <Icon size={20} />}
       {children}

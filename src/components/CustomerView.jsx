@@ -292,11 +292,6 @@ const CustomerView = ({ isAdminMode = false, onExitAdminLive }) => {
         <div className={cn("relative z-10", !isMiniMode && "animate-fade-in")}>
           <HeroSection 
             onEnterLive={() => {
-              // 네이티브 전체 화면 요청 (주소창 숨기기)
-              const docElm = document.documentElement;
-              if (docElm.requestFullscreen) docElm.requestFullscreen().catch(() => {});
-              else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
-
               setIsLiveMode(true);
               setIsMiniMode(false);
               

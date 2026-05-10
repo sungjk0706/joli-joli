@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, MoreVertical, Volume2, VolumeX, Minimize2, X, Share2, Info } from 'lucide-react';
+import { ChevronDown, MoreVertical, Volume2, VolumeX, Minimize2, Minimize, Maximize, X, Share2, Info } from 'lucide-react';
 
 const LiveHeader = ({ 
   activeProduct, 
@@ -11,6 +11,31 @@ const LiveHeader = ({
   viewMode 
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(!!(document.fullscreenElement || document.webkitFullscreenElement));
+
+  // 전체 화면 상태 변화 감지
+  React.useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const docElm = document.documentElement;
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (docElm.requestFullscreen) docElm.requestFullscreen().catch(() => {});
+      else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+  };
 
   const handleShare = async () => {
     setShowMenu(false);
@@ -122,8 +147,13 @@ const LiveHeader = ({
             <X size={20} sm:size={24} />
           </button>
 
-          {/* Minimize Button Below */}
-          <button onClick={() => onMiniModeChange(true)} className="w-9 h-9 sm:w-10 sm:h-10 bg-black/20 backdrop-blur-md border border-white/5 rounded-full flex items-center justify-center text-white/80 hover:bg-black/40 transition-all shadow-lg">
+          {/* Full Screen Toggle (Clean Icon) */}
+          <button onClick={toggleFullscreen} className="w-10 h-10 sm:w-11 sm:h-11 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-black/60 transition-all shadow-xl" title={isFullscreen ? "축소하기" : "전체화면"}>
+            {isFullscreen ? <Minimize size={20} sm:size={22} /> : <Maximize size={20} sm:size={22} />}
+          </button>
+
+          {/* Mini Mode Toggle (Clean Icon) */}
+          <button onClick={() => onMiniModeChange(true)} className="w-9 h-9 sm:w-10 sm:h-10 bg-black/20 backdrop-blur-md border border-white/5 rounded-full flex items-center justify-center text-white/80 hover:bg-black/40 transition-all shadow-lg" title="미니 플레이어">
             <Minimize2 size={18} sm:size={20} />
           </button>
 

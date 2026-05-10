@@ -19,19 +19,25 @@
   --font-size-admin-lg: 18px;
 }
 
+html, body, #root, * {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  outline: none !important;
+}
+
 @layer base {
   body {
     @apply bg-brand-pink-light text-base;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Standard Reset */
-  * {
-    -webkit-tap-highlight-color: transparent;
   }
 
   *:focus {
     outline: none;
+  }
+  
+  .isolate-layers {
+    isolation: isolate;
   }
 }
 
@@ -124,11 +130,63 @@
 
 
 @keyframes ripple {
-  0% { transform: scale(0.8); opacity: 0.8; }
-  100% { transform: scale(2.5); opacity: 0; }
+  0% { transform: scale(0.6); opacity: 0.6; }
+  100% { transform: scale(3.5); opacity: 0; }
 }
 
 .animate-ripple {
-  animation: ripple 4s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  animation: ripple 6s cubic-bezier(0, 0.2, 0.8, 1) infinite;
   will-change: transform, opacity;
+}
+
+@keyframes logoRocking {
+  0% { transform: rotate(-12deg) translateX(-10px); }
+  50% { transform: rotate(12deg) translateX(10px); }
+  100% { transform: rotate(-12deg) translateX(-10px); }
+}
+
+.animate-logo-rocking {
+  animation: logoRocking 5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.will-change-transform {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Force remove tap highlight on mobile for all buttons and interactive elements */
+button, 
+a, 
+.cursor-pointer {
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Eliminate rectangular shadow artifacts during active transitions on mobile */
+button:active, 
+a:active,
+.active\:scale-95:active {
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  outline: none !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+}
+
+/* Prevent hover effects on touch devices to avoid "sticky" highlights and rendering artifacts */
+@media (hover: hover) {
+  .hover\:scale-110:hover { transform: scale(1.1); }
+  .hover\:bg-brand-pink:hover { @apply bg-brand-pink; }
+  .hover\:bg-brand-blue:hover { @apply bg-brand-blue; }
+  .hover\:bg-gray-800:hover { @apply bg-gray-800; }
+  .hover\:bg-gray-100:hover { @apply bg-gray-100; }
+}
+
+svg {
+  pointer-events: none;
 }

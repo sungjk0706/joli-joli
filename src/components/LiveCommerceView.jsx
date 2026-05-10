@@ -174,21 +174,7 @@ const LiveCommerceView = ({
     };
   }, []);
 
-  // 전체 화면 복구 감지 및 주소창 숨기기 (몰입감 확보)
-  useEffect(() => {
-    if (!isMiniMode) {
-      const docElm = document.documentElement;
-      const requestFS = () => {
-        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-          if (docElm.requestFullscreen) docElm.requestFullscreen().catch(() => {});
-          else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
-        }
-      };
-      // 약간의 지연을 주어 브라우저 상태 안정화 후 요청
-      const timer = setTimeout(requestFS, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isMiniMode]);
+  // Automatic fullscreen request removed to prevent annoying Android system notifications
 
 
 
