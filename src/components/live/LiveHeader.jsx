@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GlassIconButton } from '../ui/Common';
+import { GlassIconButton, StatusBadge } from '../ui/Common';
 import { ChevronDown, MoreVertical, Volume2, VolumeX, Minimize2, Minimize, Maximize, X, Share2, Info, Heart } from 'lucide-react';
 
 const LiveHeader = ({ 
@@ -14,6 +14,14 @@ const LiveHeader = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(!!(document.fullscreenElement || document.webkitFullscreenElement));
+
+  // 메뉴 외부 클릭 시 닫기
+  React.useEffect(() => {
+    if (!showMenu) return;
+    const handleClickOutside = () => setShowMenu(false);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, [showMenu]);
 
   // 전체 화면 상태 변화 감지
   React.useEffect(() => {
@@ -118,17 +126,17 @@ const LiveHeader = ({
     <div className={`absolute left-0 right-0 z-[70] flex flex-col px-3 sm:px-4 transition-all duration-500 pointer-events-auto ${viewMode === 'landscape-full' ? 'top-4' : 'top-5'}`}>
       <div className="flex justify-between items-start">
         <div className="flex flex-col gap-1.5 pt-1">
-          <div className="flex items-center gap-1">
-            <div className="bg-red-600 px-1.5 py-0.5 rounded-sm flex items-center gap-1 shadow-md">
-              <span className="text-white text-[9px] sm:text-[10px] font-black uppercase">LIVE</span>
-            </div>
-            <div className="bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-sm flex items-center border border-white/10">
-              <span className="text-white text-[11px] sm:text-[12px] font-bold opacity-90">1,291 시청</span>
-            </div>
-            <div className="bg-brand-pink/20 backdrop-blur-md px-2 py-0.5 rounded-sm flex items-center gap-1 border border-brand-pink/30">
-              <Heart size={10} className="text-brand-pink fill-brand-pink animate-pulse" />
-              <span className="text-brand-pink text-[11px] sm:text-[12px] font-black">{Number(likeCount).toLocaleString()}</span>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <StatusBadge variant="red">
+              <span className="uppercase">LIVE</span>
+            </StatusBadge>
+            <StatusBadge variant="dark">
+              <span>1,291 시청</span>
+            </StatusBadge>
+            <StatusBadge variant="pink">
+              <Heart size={10} className="fill-white animate-pulse" />
+              <span>{Number(likeCount).toLocaleString()}</span>
+            </StatusBadge>
           </div>
           <h2 className="text-white text-[15px] sm:text-[17px] md:text-[19px] font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] flex items-center gap-1.5 tracking-tight mt-0.5">
             ✨ {activeProduct?.name || '졸리졸리 라이브 컬렉션'} 💥
@@ -176,14 +184,16 @@ const LiveHeader = ({
                 setShowMenu(!showMenu);
               }}
               title="더보기"
-              className={showMenu ? 'bg-white/20 border-white/40' : ''}
             >
               <MoreVertical size={20} sm:size={22} />
             </GlassIconButton>
 
             {/* More Options Popover */}
             {showMenu && (
-              <div className="absolute right-full top-0 mr-3 w-36 bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-fade-in z-[9999]">
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="absolute right-full top-0 mr-3 w-36 bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-fade-in z-[9999]"
+              >
                 <button 
                   onClick={(e) => { e.stopPropagation(); handleShare(); }}
                   className="w-full px-4 py-3.5 flex items-center gap-3 text-white text-[13px] font-bold hover:bg-white/10 active:bg-white/20 transition-all"

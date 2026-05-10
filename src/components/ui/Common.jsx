@@ -248,3 +248,22 @@ export const GlassIconButton = ({ onClick, children, className = "", title = "" 
     {children}
   </button>
 )
+
+// 프로젝트 전역에서 사용하는 상태 표시용 사각 뱃지
+export const StatusBadge = ({ children, variant = 'dark', className = "" }) => {
+  const variants = {
+    red: 'bg-red-600 border-red-500 shadow-md text-white',
+    dark: 'bg-black/40 backdrop-blur-md border-white/10 text-white',
+    pink: 'bg-brand-pink/40 backdrop-blur-md border-brand-pink/30 text-white'
+  }
+  
+  return (
+    <div className={cn(
+      "px-2 py-0.5 rounded-sm flex items-center gap-1 border transition-all h-[20px] sm:h-[22px] text-[10px] sm:text-[11px] font-black tracking-tight whitespace-nowrap",
+      variants[variant],
+      className
+    )}>
+      {children}
+    </div>
+  )
+}
