@@ -2,127 +2,121 @@ import React, { useState, useEffect, useRef } from 'react';
 import ProductCard from '../ui/ProductCard';
 
 /**
- * LiveProductDisplay - 수동 스와이프 + 물 흐르듯 부드러운 슬라이드 + 흔들림 방지
+ * LiveProductDisplay - requestAnimationFrame 기반의 끊김 없는 무한 흐름 티커
  */
 const LiveProductDisplay = ({ products = [], onOrderOpen, onProductClick }) => {
-  const CARD_WIDTH = 220;
-  const GAP = 12;
-  const TOTAL_WIDTH = CARD_WIDTH + GAP;
-
-  // 무한 루프를 위한 복제 ([마지막, ...원본, 처음])
-  const displayProducts = products.length > 1 
-    ? [products[products.length - 1], ...products, products[0]] 
-    : products;
-
-  const [currentIndex, setCurrentIndex] = useState(products.length > 1 ? 1 : 0);
-  const [transitionStyle, setTransitionStyle] = useState('transform 8000ms linear');
-  const [isPaused, setIsPaused] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
+  const CARD_WIDTH = 220; // 카드 너비
+  const GAP = 0; // 카드 간격 (이미 ProductCard 내부 패딩으로 조절됨)
+  const ITEM_WIDTH = CARD_WIDTH + GAP;
   
-  const timerRef = useRef(null);
-  const isTransitioning = useRef(false);
-  const touchStartX = useRef(0);
-  const touchMoveX = useRef(0);
-  const isDragging = useRef(false);
+  // 무한 루프를 위해 최소 2세트 이상의 아이템 복제
+  const displayProducts = products.length > 1 ? [...products, ...products, ...products] : products;
+  const TOTAL_SET_WIDTH = products.length * ITEM_WIDTH;
 
-  // 자동 슬라이드
-  useEffect(() => {
-    if (products.length <= 1 || isPaused) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
+  const [activeIndicatorIndex, setActiveIndicatorIndex] = useState(0);
+  
+  const containerRef = useRef(null);
+  const scrollPosRef = useRef(0);
+  const requestRef = useRef();
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  
+  const SPEED = 0.5; // 프레임당 이동 픽셀 (속도 조절 가능)
 
-    timerRef.current = setInterval(() => {
-      if (!isTransitioning.current) {
-        setTransitionStyle('transform 8000ms linear');
-        setCurrentIndex(prev => prev + 1);
+  const animate = (time) => {
+    if (lastTimeRef.current !== undefined && !isDraggingRef.current && products.length > 1) {
+      // 자동 흐름 계산
+      scrollPosRef.current -= SPEED;
+      
+      // 심리스 루프 처리 (첫 번째 세트가 다 지나가면 즉시 좌표 보정)
+      if (scrollPosRef.current <= -TOTAL_SET_WIDTH) {
+        scrollPosRef.current += TOTAL_SET_WIDTH;
       }
-    }, 8000);
+      
+      if (containerRef.current) {
+        containerRef.current.style.transform = `translateX(${scrollPosRef.current}px)`;
+      }
 
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [products.length, isPaused]);
-
-  // 무한 루프 점프 처리
-  useEffect(() => {
-    if (products.length <= 1) return;
-    const total = displayProducts.length;
-    
-    if (currentIndex === total - 1 || currentIndex === 0) {
-      isTransitioning.current = true;
-      const timer = setTimeout(() => {
-        setTransitionStyle('none');
-        setCurrentIndex(currentIndex === 0 ? total - 2 : 1);
-        isTransitioning.current = false;
-      }, 8000);
-      return () => clearTimeout(timer);
+      // 인디케이터 업데이트 (매 프레임할 필요는 없으나 로직상 현재 위치 계산)
+      const absPos = Math.abs(scrollPosRef.current) % TOTAL_SET_WIDTH;
+      const index = Math.floor((absPos + ITEM_WIDTH / 2) / ITEM_WIDTH) % products.length;
+      setActiveIndicatorIndex(index);
     }
-  }, [currentIndex, displayProducts.length, products.length]);
+    
+    lastTimeRef.current = time;
+    requestRef.current = requestAnimationFrame(animate);
+  };
 
-  // 터치 이벤트 (영상 흔들림 방지 포함)
+  useEffect(() => {
+    if (products.length > 1) {
+      requestRef.current = requestAnimationFrame(animate);
+    }
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [products.length]);
+
+  // 터치 핸들러
   const handleTouchStart = (e) => {
-    // 이벤트 전파 방지로 영상 플레이어 영향 차단
     e.stopPropagation();
-    if (isTransitioning.current) return;
-    touchStartX.current = e.touches[0].clientX;
-    setIsPaused(true);
-    setTransitionStyle('none');
-    isDragging.current = true;
+    if (products.length <= 1) return;
+    
+    isDraggingRef.current = true;
+    // 터치 시작 지점과 현재 스크롤 위치의 관계 기록
+    startXRef.current = e.touches[0].clientX - scrollPosRef.current;
   };
 
   const handleTouchMove = (e) => {
     e.stopPropagation();
-    if (!isDragging.current) return;
+    if (!isDraggingRef.current) return;
+    
     const currentX = e.touches[0].clientX;
-    const diff = currentX - touchStartX.current;
-    setDragOffset(diff);
+    scrollPosRef.current = currentX - startXRef.current;
+    
+    // 드래그 시에도 루프 경계 처리
+    if (scrollPosRef.current <= -TOTAL_SET_WIDTH * 2) {
+        scrollPosRef.current += TOTAL_SET_WIDTH;
+        startXRef.current += TOTAL_SET_WIDTH;
+    } else if (scrollPosRef.current > 0) {
+        scrollPosRef.current -= TOTAL_SET_WIDTH;
+        startXRef.current -= TOTAL_SET_WIDTH;
+    }
+
+    if (containerRef.current) {
+      containerRef.current.style.transform = `translateX(${scrollPosRef.current}px)`;
+    }
+
+    // 드래그 중에도 인디케이터 갱신
+    const absPos = Math.abs(scrollPosRef.current) % TOTAL_SET_WIDTH;
+    const index = Math.floor((absPos + ITEM_WIDTH / 2) / ITEM_WIDTH) % products.length;
+    setActiveIndicatorIndex(index);
   };
 
   const handleTouchEnd = (e) => {
     e.stopPropagation();
-    if (!isDragging.current) return;
-    isDragging.current = false;
-    
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    setDragOffset(0);
-    setTransitionStyle('transform 600ms cubic-bezier(0.25, 1, 0.5, 1)');
-    
-    if (Math.abs(diff) > 40) {
-      if (diff > 0) setCurrentIndex(prev => prev + 1);
-      else setCurrentIndex(prev => prev - 1);
-    } else {
-      setCurrentIndex(currentIndex);
-    }
-    
-    setTimeout(() => setIsPaused(false), 3000);
+    isDraggingRef.current = false;
   };
 
   if (!products || products.length === 0) return null;
 
-  const activeIndicatorIndex = products.length > 1 
-    ? (currentIndex === 0 ? products.length - 1 : (currentIndex === displayProducts.length - 1 ? 0 : currentIndex - 1))
-    : 0;
-
   return (
     <div 
-      id="live-product-card-container" 
       className="flex flex-col gap-2 pointer-events-auto w-full animate-fade-in select-none"
-      style={{ touchAction: 'pan-x' }} // 수직 흔들림 방지
+      style={{ touchAction: 'pan-y' }} // 수평 드래그 허용, 수직 스크롤 방지
     >
       <div 
-        className="relative w-full overflow-hidden rounded-xl shadow-2xl border-0 ring-0 outline-none"
+        className="relative w-full overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
       >
         <div 
-          className="flex border-0 outline-none" 
+          ref={containerRef}
+          className="flex will-change-transform" 
           style={{ 
-            transform: `translateX(calc(-${currentIndex * 220}px + ${dragOffset}px))`,
-            transition: transitionStyle,
-            gap: '0', // index 슬라이딩을 위해 내부 gap은 0으로 하고 카드 내부 패딩으로 조절
-            border: 'none',
-            outline: 'none'
+            transform: `translateX(${scrollPosRef.current}px)`,
+            gap: '0'
           }}
         >
           {displayProducts.map((prod, idx) => (
@@ -138,19 +132,17 @@ const LiveProductDisplay = ({ products = [], onOrderOpen, onProductClick }) => {
         </div>
       </div>
 
-      {/* 인디케이터 (하단) */}
+      {/* 인디케이터 */}
       {products.length > 1 && (
         <div className="flex justify-center gap-1.5 mt-0.5">
           {products.map((_, i) => (
             <div 
               key={i} 
-              className={`h-0.5 rounded-full transition-all duration-500 ${i === activeIndicatorIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/30'}`}
+              className={`h-0.5 rounded-full transition-all duration-300 ${i === activeIndicatorIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/30'}`}
             />
           ))}
         </div>
       )}
-
-
     </div>
   );
 };
